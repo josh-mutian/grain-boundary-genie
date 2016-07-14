@@ -9,8 +9,10 @@ class Structure(object):
         self.comment = comment
         self.scaling = scaling
         self.coordinate = coordinate
+        self.inverse = np.linalg.inv(np.transpose(coordinate))
         self.elements_provided = elements_provided
         self.atoms = atoms
+        self.cartesian = False
 
     def __str__(self):
         res = ""
@@ -28,16 +30,38 @@ class Structure(object):
         res += tabulate(rows) + "\n"
         res += "*** Element Names: \n  "
         res += ("P" if self.elements_provided else "Not p") + "rovided\n"
+        res += "*** In Cartesian System: \n  "
+        res += ("Yes" if self.cartesian else "No") + "\n"
         res += "*** Atoms: \n"
-        res += "  a        b        c        element\n"
+        rows = []
+        rows.append(["  a", "b", "c", "element"])
         for ent in self.atoms:
-            res += "  %.5f  %.5f  %.5f  %s\n" % (ent[0][0], ent[0][1], 
-                ent[0][2], ent[1])
-        return res[0:-1]
+            rows.append(["  %.5f" % ent[0][0], "%.5f" % ent[0][1], 
+                "%.5f" % ent[0][2], "%s" % ent[1]])
+        res += tabulate(rows)
+        return res
 
     def cut_by_lattice(self, lattice):
         distance = np.dot(lattice.direction, np.transpose(self.atoms["position"]))
         self.atoms = self.atoms[np.where(distance < lattice.distance)]
+        return
+
+    def to_cartesian(self):
+        if self.cartesian:
+            return
+        new_representation = np.dot(np.transpose(self.coordinate), 
+            np.transpose(self.atoms["position"]))
+        self.atoms["position"] = np.transpose(new_representation)
+        self.cartesian = True
+        return
+
+    def to_coordinate(self):
+        if not self.cartesian:
+            return
+        orig_representation = np.dot(self.inverse, 
+            np.transpose(self.atoms["position"]))
+        self.atoms["position"] = np.transpose(orig_representation)
+        self.cartesian = False
         return
 
     @staticmethod
@@ -85,7 +109,7 @@ class Structure(object):
         return Structure(comment, scaling, coordinate, element_provided, atoms)
     
 
-    def output_as_vasp(self, name):
+    def to_vasp(self, name):
         out_file = open(name, 'w')
         out_file.write(self.comment + "\n")
         out_file.write(str(self.scaling) + "\n")
@@ -122,10 +146,6 @@ class Structure(object):
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    lattice = Lattice([1, 2, 0], 1.5)
-    struct.cut_by_lattice(lattice)
-    print(lattice)
-    struct.output_as_vasp("test_out.vasp")
 
 
 if __name__ == '__main__':
