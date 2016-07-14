@@ -6,7 +6,7 @@ class Lattice(object):
         if (len(miller) != 3):
             raise ValueError("Miller indexes must have three components.")
         self.direction = np.array(map(float, miller))
-        self.direction = self.direction# / np.linalg.norm(self.direction)
+        self.direction = self.direction
         self.distance = float(distance)
 
     def __str__(self):
