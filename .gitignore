@@ -1,2 +1,3 @@
 *.vasp
 *.pyc
+*.test
