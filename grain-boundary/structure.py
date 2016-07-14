@@ -27,7 +27,7 @@ class Structure(object):
             self.coordinate[1].tolist()))
         rows.append(["  c"] + map(lambda x : "%.5f" % x, 
             self.coordinate[2].tolist()))
-        res += tabulate(rows) + "\n"
+        res += Utility.tabulate(rows) + "\n"
         res += "*** Element Names: \n  "
         res += ("P" if self.elements_provided else "Not p") + "rovided\n"
         res += "*** In Cartesian System: \n  "
@@ -38,7 +38,7 @@ class Structure(object):
         for ent in self.atoms:
             rows.append(["  %.5f" % ent[0][0], "%.5f" % ent[0][1], 
                 "%.5f" % ent[0][2], "%s" % ent[1]])
-        res += tabulate(rows)
+        res += Utility.tabulate(rows)
         return res
 
     def cut_by_lattice(self, lattice):
@@ -142,11 +142,28 @@ class Structure(object):
         out_file.write("Direct\n")
         for pos in self.atoms["position"]:
             out_file.write("%.16f  %.16f  %.16f\n" % (pos[0], pos[1], pos[2]))
+        out_file.close()
+        return
 
+    def to_xyz(self, name):
+        orig_format = self.cartesian
+        self.to_cartesian()
+        out_file = open(name, 'w')
+        out_file.write(str(self.atoms.shape[0]) + "\n")
+        out_file.write(self.comment + "\n")
+        rows = []
+        for ent in self.atoms:
+            rows.append(["%s" % ent[1], "%.16f" % ent[0][0], 
+                "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
+        out_file.write(tabulate(rows))
+        out_file.close()
+        if not orig_format:
+            self.to_coordinate()
+        return
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-
+    struct.to_xyz("xyz.test")
 
 if __name__ == '__main__':
     main(sys.argv)
