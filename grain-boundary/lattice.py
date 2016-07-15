@@ -21,13 +21,13 @@ class Lattice(object):
 
     @staticmethod
     def from_file(path):
-        input_file = open(path, 'r')
-        next_line = input_file.readline().split(';')
-        input_file.close()
-        if (len(next_line) != 3):
-            raise ValueError("Wrong input format.\nUsage: a, b, c; d")
-        direction = next_line[0].split(',')
-        distance = next_line[1]
+        with open(path, 'r') as in_file:
+            next_line = in_file.readline().split(';')
+            in_file.close()
+            if (len(next_line) != 3):
+                raise ValueError("Wrong input format.\nUsage: a, b, c; d")
+            direction = next_line[0].split(',')
+            distance = next_line[1]
         return Lattice(direction, distance)
 
 

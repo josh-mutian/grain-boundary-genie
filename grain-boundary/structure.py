@@ -70,96 +70,95 @@ class Structure(object):
 
     @staticmethod
     def from_vasp(path):
-        in_file = open(path, 'r')
-        comment = in_file.readline().split()[0]
-        scaling = float(in_file.readline())
-        coordinate = np.array([map(float, in_file.readline().split()),
-                               map(float, in_file.readline().split()),
-                               map(float, in_file.readline().split())])
+        with open(path, 'r') as in_file:
+            comment = in_file.readline().split()[0]
+            scaling = float(in_file.readline())
+            coordinate = np.array([map(float, in_file.readline().split()),
+                                   map(float, in_file.readline().split()),
+                                   map(float, in_file.readline().split())])
 
-        next_line = in_file.readline().split()
-        try:
-            element_count = map(int, next_line)
-        except ValueError as e:
-            element_list = next_line
             next_line = in_file.readline().split()
-            element_count = map(int, next_line)
-            element_provided = True
-        else:
-            element_list = map(str, range(len(element_count)))
-            element_provided = False
-        finally:
-            if (len(element_list) != len(element_count)):
-                raise ValueError("Element list and count lengths mismatch.")
+            try:
+                element_count = map(int, next_line)
+            except ValueError as e:
+                element_list = next_line
+                next_line = in_file.readline().split()
+                element_count = map(int, next_line)
+                element_provided = True
+            else:
+                element_list = map(str, range(len(element_count)))
+                element_provided = False
+            finally:
+                if (len(element_list) != len(element_count)):
+                    raise ValueError(
+                        "Element list and count lengths mismatch.")
 
-        elements = [[name for _ in range(count)] for (name, count) in
-                    zip(element_list, element_count)]
-        elements = np.array(elements).flatten()
+            elements = [[name for _ in range(count)] for (name, count) in
+                        zip(element_list, element_count)]
+            elements = np.array(elements).flatten()
 
-        next_line = in_file.readline().split()
-        if (next_line[0] == "Selective"):
             next_line = in_file.readline().split()
+            if (next_line[0] == "Selective"):
+                next_line = in_file.readline().split()
 
-        if (next_line[0] != "Direct" and next_line[0] != "D"):
-            raise ValueError("Only Mode \"Direct\" supported.")
+            if (next_line[0] != "Direct" and next_line[0] != "D"):
+                raise ValueError("Only Mode \"Direct\" supported.")
 
-        atoms = []
-        for _ in range(0, sum(element_count)):
-            atoms.append(map(float, in_file.readline().split()[0:3]))
-        atoms = np.array(zip(atoms, elements),
-                         dtype=[("position", ">f4", 3), ("element", "|S5")])
-        in_file.close()
+            atoms = []
+            for _ in range(0, sum(element_count)):
+                atoms.append(map(float, in_file.readline().split()[0:3]))
+            atoms = np.array(zip(atoms, elements),
+                             dtype=[("position", ">f4", 3), ("element", "|S5")])
 
         return Structure(comment, scaling, coordinate, element_provided, atoms)
 
     def to_vasp(self, name):
-        out_file = open(name, 'w')
-        out_file.write(self.comment + "\n")
-        out_file.write(str(self.scaling) + "\n")
-        for vector in self.coordinate:
-            out_file.write(" ".join(map(str, vector.tolist())) + "\n")
+        with open(name, 'w') as out_file:
+            out_file.write(self.comment + "\n")
+            out_file.write(str(self.scaling) + "\n")
+            for vector in self.coordinate:
+                out_file.write(" ".join(map(str, vector.tolist())) + "\n")
 
-        # Generate element list, assuming well ordered.
-        element_list = []
-        element_count = []
-        prev_element = None
-        prev_count = None
-        for ele in self.atoms["element"]:
-            if (ele != prev_element):
-                if prev_element is not None:
-                    element_list.append(prev_element)
-                    element_count.append(prev_count)
-                prev_element = ele
-                prev_count = 1
+            # Generate element list, assuming well ordered.
+            element_list = []
+            element_count = []
+            prev_element = None
+            prev_count = None
+            for ele in self.atoms["element"]:
+                if (ele != prev_element):
+                    if prev_element is not None:
+                        element_list.append(prev_element)
+                        element_count.append(prev_count)
+                    prev_element = ele
+                    prev_count = 1
+                else:
+                    prev_count += 1
+            element_list.append(prev_element)
+            element_count.append(prev_count)
+            if self.elements_provided:
+                out_file.write(" ".join(element_list) + "\n")
+                out_file.write(" ".join(map(str, element_count)) + "\n")
             else:
-                prev_count += 1
-        element_list.append(prev_element)
-        element_count.append(prev_count)
-        if self.elements_provided:
-            out_file.write(" ".join(element_list) + "\n")
-            out_file.write(" ".join(map(str, element_count)) + "\n")
-        else:
-            out_file.write(" ".join(element_list) + "\n")
-            out_file.write(" ".join(map(str, element_count)) + "\n")
+                out_file.write(" ".join(element_list) + "\n")
+                out_file.write(" ".join(map(str, element_count)) + "\n")
 
-        out_file.write("Direct\n")
-        for pos in self.atoms["position"]:
-            out_file.write("%.16f  %.16f  %.16f\n" % (pos[0], pos[1], pos[2]))
-        out_file.close()
+            out_file.write("Direct\n")
+            for pos in self.atoms["position"]:
+                out_file.write("%.16f  %.16f  %.16f\n" %
+                               (pos[0], pos[1], pos[2]))
         return
 
     def to_xyz(self, name):
         orig_format = self.cartesian
         self.to_cartesian()
-        out_file = open(name, 'w')
-        out_file.write(str(self.atoms.shape[0]) + "\n")
-        out_file.write(self.comment + "\n")
-        rows = []
-        for ent in self.atoms:
-            rows.append(["%s" % ent[1], "%.16f" % ent[0][0],
-                         "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
-        out_file.write(util.tabulate(rows))
-        out_file.close()
+        with open(name, 'w') as out_file:
+            out_file.write(str(self.atoms.shape[0]) + "\n")
+            out_file.write(self.comment + "\n")
+            rows = []
+            for ent in self.atoms:
+                rows.append(["%s" % ent[1], "%.16f" % ent[0][0],
+                             "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
+            out_file.write(util.tabulate(rows))
         if not orig_format:
             self.to_coordinate()
         return
