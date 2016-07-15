@@ -1,7 +1,9 @@
 import numpy as np
 
+
 class Lattice(object):
     """docstring for Lattice"""
+
     def __init__(self, miller, distance):
         if (len(miller) != 3):
             raise ValueError("Miller indexes must have three components.")
@@ -12,8 +14,8 @@ class Lattice(object):
     def __str__(self):
         res = ""
         res += "=== LATTICE: \n"
-        res += ("*** Direction: \n  (%.5f, %.5f, %.5f)\n" % 
-            (self.direction[0], self.direction[1], self.direction[2]))
+        res += ("*** Direction: \n  (%.5f, %.5f, %.5f)\n" %
+                (self.direction[0], self.direction[1], self.direction[2]))
         res += "*** Distance from Origin: \n  %.5f" % self.distance
         return res
 
@@ -27,6 +29,7 @@ class Lattice(object):
         direction = next_line[0].split(',')
         distance = next_line[1]
         return Lattice(direction, distance)
+
 
 def main():
     lat = Lattice([1, 2, -1], 0.3)

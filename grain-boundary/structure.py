@@ -4,8 +4,10 @@ import sys
 import geometry as geom
 from lattice import Lattice
 
+
 class Structure(object):
     """docstring for Structure"""
+
     def __init__(self, comment, scaling, coordinate, elements_provided, atoms):
         self.comment = comment
         self.scaling = scaling
@@ -19,15 +21,15 @@ class Structure(object):
         res = ""
         res += "=== STRUCTURE: \n"
         res += "*** Comment: \n  " + self.comment + "\n"
-        res += "*** Scaling: \n  %.5f\n" % (self.scaling) 
+        res += "*** Scaling: \n  %.5f\n" % (self.scaling)
         res += "*** Coordinates: \n"
         rows = [["", "x", "y", "z"]]
-        rows.append(["  a"] + map(lambda x : "%.5f" % x, 
-            self.coordinate[0].tolist()))
-        rows.append(["  b"] + map(lambda x : "%.5f" % x, 
-            self.coordinate[1].tolist()))
-        rows.append(["  c"] + map(lambda x : "%.5f" % x, 
-            self.coordinate[2].tolist()))
+        rows.append(["  a"] + map(lambda x: "%.5f" % x,
+                                  self.coordinate[0].tolist()))
+        rows.append(["  b"] + map(lambda x: "%.5f" % x,
+                                  self.coordinate[1].tolist()))
+        rows.append(["  c"] + map(lambda x: "%.5f" % x,
+                                  self.coordinate[2].tolist()))
         res += util.tabulate(rows) + "\n"
         res += "*** Element Names: \n  "
         res += ("P" if self.elements_provided else "Not p") + "rovided\n"
@@ -37,21 +39,22 @@ class Structure(object):
         rows = []
         rows.append(["  a", "b", "c", "element"])
         for ent in self.atoms:
-            rows.append(["  %.5f" % ent[0][0], "%.5f" % ent[0][1], 
-                "%.5f" % ent[0][2], "%s" % ent[1]])
+            rows.append(["  %.5f" % ent[0][0], "%.5f" % ent[0][1],
+                         "%.5f" % ent[0][2], "%s" % ent[1]])
         res += util.tabulate(rows)
         return res
 
     def cut_by_lattice(self, lattice):
-        distance = np.dot(lattice.direction, np.transpose(self.atoms["position"]))
+        distance = np.dot(lattice.direction,
+                          np.transpose(self.atoms["position"]))
         self.atoms = self.atoms[np.where(distance < lattice.distance)]
         return
 
     def to_cartesian(self):
         if self.cartesian:
             return
-        new_representation = np.dot(np.transpose(self.coordinate), 
-            np.transpose(self.atoms["position"]))
+        new_representation = np.dot(np.transpose(self.coordinate),
+                                    np.transpose(self.atoms["position"]))
         self.atoms["position"] = np.transpose(new_representation)
         self.cartesian = True
         return
@@ -59,8 +62,8 @@ class Structure(object):
     def to_coordinate(self):
         if not self.cartesian:
             return
-        orig_representation = np.dot(self.inverse, 
-            np.transpose(self.atoms["position"]))
+        orig_representation = np.dot(self.inverse,
+                                     np.transpose(self.atoms["position"]))
         self.atoms["position"] = np.transpose(orig_representation)
         self.cartesian = False
         return
@@ -70,10 +73,10 @@ class Structure(object):
         in_file = open(path, 'r')
         comment = in_file.readline().split()[0]
         scaling = float(in_file.readline())
-        coordinate = np.array([map(float, in_file.readline().split()), 
-            map(float, in_file.readline().split()), 
-            map(float, in_file.readline().split())])
-        
+        coordinate = np.array([map(float, in_file.readline().split()),
+                               map(float, in_file.readline().split()),
+                               map(float, in_file.readline().split())])
+
         next_line = in_file.readline().split()
         try:
             element_count = map(int, next_line)
@@ -89,8 +92,8 @@ class Structure(object):
             if (len(element_list) != len(element_count)):
                 raise ValueError("Element list and count lengths mismatch.")
 
-        elements = [[name for _ in range(count)] for (name, count) in 
-            zip(element_list, element_count)]
+        elements = [[name for _ in range(count)] for (name, count) in
+                    zip(element_list, element_count)]
         elements = np.array(elements).flatten()
 
         next_line = in_file.readline().split()
@@ -103,12 +106,11 @@ class Structure(object):
         atoms = []
         for _ in range(0, sum(element_count)):
             atoms.append(map(float, in_file.readline().split()[0:3]))
-        atoms = np.array(zip(atoms, elements), 
-            dtype = [("position", ">f4", 3), ("element", "|S5")])
+        atoms = np.array(zip(atoms, elements),
+                         dtype=[("position", ">f4", 3), ("element", "|S5")])
         in_file.close()
 
         return Structure(comment, scaling, coordinate, element_provided, atoms)
-    
 
     def to_vasp(self, name):
         out_file = open(name, 'w')
@@ -154,8 +156,8 @@ class Structure(object):
         out_file.write(self.comment + "\n")
         rows = []
         for ent in self.atoms:
-            rows.append(["%s" % ent[1], "%.16f" % ent[0][0], 
-                "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
+            rows.append(["%s" % ent[1], "%.16f" % ent[0][0],
+                         "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
         out_file.write(util.tabulate(rows))
         out_file.close()
         if not orig_format:
@@ -166,9 +168,13 @@ class Structure(object):
         # This is forced to be done in Cartesian mode.
         self.to_cartesian()
         rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
-        self.atoms["position"] = np.transpose(np.dot(rotation_matrix, 
-            np.transpose(self.atoms["position"])))
+        self.atoms["position"] = np.transpose(
+            np.dot(rotation_matrix, np.transpose(self.atoms["position"])))
         return
+
+    @staticmethod
+    def combine(struct1, struct2):
+        raise NotImplementedError("Method combine() is not finished yet.")
 
 
 def main(argv):

@@ -1,6 +1,6 @@
 def tabulate_item(row, col_widths, sep="  "):
     """Convert a string list representing a row into a formatted string.
-    
+
     Args:
         row (str list): A list of strings representing a row in a table, each 
         item represents a column within a row of the table.
@@ -8,7 +8,7 @@ def tabulate_item(row, col_widths, sep="  "):
         width of the table.
         sep (str, optional): The separation character between rows. Default is
         two spaces.
-    
+
     Returns:
         str: A string representing a tabulated row.
     """
@@ -23,13 +23,13 @@ def tabulate_item(row, col_widths, sep="  "):
 
 def tabulate(rows, sep="  "):
     """Generate a formatted string representing a table.
-    
+
     Args:
         rows (str list list): A list in which each element is a list of strings
         representing a row in the table.
         sep (str, optional): The separation character between rows. Default is
         two spaces.
-    
+
     Returns:
         str: Formatted string representing a table.
     """
