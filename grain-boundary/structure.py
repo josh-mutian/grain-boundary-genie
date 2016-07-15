@@ -166,8 +166,6 @@ class Structure(object):
         # This is forced to be done in Cartesian mode.
         self.to_cartesian()
         rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
-        print(np.transpose(rotation_matrix))
-        print(np.linalg.inv(rotation_matrix))
         self.atoms["position"] = np.transpose(np.dot(rotation_matrix, 
             np.transpose(self.atoms["position"])))
         return
