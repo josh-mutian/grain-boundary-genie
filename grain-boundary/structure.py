@@ -1,6 +1,7 @@
 import numpy as np
-from utilities import *
+import utilities as util
 import sys
+import geometry as geom
 from lattice import Lattice
 
 class Structure(object):
@@ -27,7 +28,7 @@ class Structure(object):
             self.coordinate[1].tolist()))
         rows.append(["  c"] + map(lambda x : "%.5f" % x, 
             self.coordinate[2].tolist()))
-        res += Utility.tabulate(rows) + "\n"
+        res += util.tabulate(rows) + "\n"
         res += "*** Element Names: \n  "
         res += ("P" if self.elements_provided else "Not p") + "rovided\n"
         res += "*** In Cartesian System: \n  "
@@ -38,7 +39,7 @@ class Structure(object):
         for ent in self.atoms:
             rows.append(["  %.5f" % ent[0][0], "%.5f" % ent[0][1], 
                 "%.5f" % ent[0][2], "%s" % ent[1]])
-        res += Utility.tabulate(rows)
+        res += util.tabulate(rows)
         return res
 
     def cut_by_lattice(self, lattice):
@@ -155,15 +156,30 @@ class Structure(object):
         for ent in self.atoms:
             rows.append(["%s" % ent[1], "%.16f" % ent[0][0], 
                 "%.16f" % ent[0][1], "%.16f" % ent[0][2]])
-        out_file.write(tabulate(rows))
+        out_file.write(util.tabulate(rows))
         out_file.close()
         if not orig_format:
             self.to_coordinate()
         return
 
+    def rotate(self, from_vector, to_vector):
+        # This is forced to be done in Cartesian mode.
+        self.to_cartesian()
+        rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
+        print(np.transpose(rotation_matrix))
+        print(np.linalg.inv(rotation_matrix))
+        self.atoms["position"] = np.transpose(np.dot(rotation_matrix, 
+            np.transpose(self.atoms["position"])))
+        return
+
+
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    struct.to_xyz("xyz.test")
+    struct.to_xyz("bef_rot.xyz")
+    lattice = Lattice([1, 1, 0], 1.4)
+    struct.cut_by_lattice(lattice)
+    struct.rotate([1, 1, 0], [0, 0, 1])
+    struct.to_xyz("aft_rot.xyz")
 
 if __name__ == '__main__':
     main(sys.argv)
