@@ -1,6 +1,7 @@
+import sys
+import copy
 import numpy as np
 import utilities as util
-import sys
 import geometry as geom
 from lattice import Lattice
 
@@ -12,7 +13,6 @@ class Structure(object):
         self.comment = comment
         self.scaling = scaling
         self.coordinate = coordinate
-        self.inverse = np.linalg.inv(np.transpose(coordinate))
         self.elements_provided = elements_provided
         self.atoms = atoms
         self.cartesian = False
@@ -55,14 +55,14 @@ class Structure(object):
             return
         new_representation = np.dot(np.transpose(self.coordinate),
                                     np.transpose(self.atoms["position"]))
-        self.atoms["position"] = np.transpose(new_representation)
+        self.atoms["position"] = self.scaling * np.transpose(new_representation)
         self.cartesian = True
         return
 
     def to_coordinate(self):
         if not self.cartesian:
             return
-        orig_representation = np.dot(self.inverse,
+        orig_representation = np.dot(np.linalg.inv(np.transpose(coordinate)),
                                      np.transpose(self.atoms["position"]))
         self.atoms["position"] = np.transpose(orig_representation)
         self.cartesian = False
@@ -84,10 +84,10 @@ class Structure(object):
                 element_list = next_line
                 next_line = in_file.readline().split()
                 element_count = map(int, next_line)
-                element_provided = True
+                elements_provided = True
             else:
                 element_list = map(str, range(len(element_count)))
-                element_provided = False
+                elements_provided = False
             finally:
                 if (len(element_list) != len(element_count)):
                     raise ValueError(
@@ -110,7 +110,7 @@ class Structure(object):
             atoms = np.array(zip(atoms, elements),
                              dtype=[("position", ">f4", 3), ("element", "|S5")])
 
-        return Structure(comment, scaling, coordinate, element_provided, atoms)
+        return Structure(comment, scaling, coordinate, elements_provided, atoms)
 
     def to_vasp(self, name):
         with open(name, 'w') as out_file:
@@ -169,20 +169,75 @@ class Structure(object):
         rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
         self.atoms["position"] = np.transpose(
             np.dot(rotation_matrix, np.transpose(self.atoms["position"])))
+        # Also apply the rotation matrix to the original coordinate vectors
+        # in case that they are useful in the future.
+        self.coordinate = np.transpose(
+            np.dot(rotation_matrix, np.transpose(self.coordinate)))
         return
 
     @staticmethod
-    def combine(struct1, struct2):
-        raise NotImplementedError("Method combine() is not finished yet.")
+    def combine(struct_1, struct_2):
+        # First check that elements_provided values same.
+        if struct_1.elements_provided != struct_2.elements_provided:
+            raise ValueError(
+                "Cannot combine two structures: ",
+                "They must have same information (element names) ",
+                "provided or not provided."
+            )
+        # Both structs should be in Cartesian mode.
+        struct_1.to_cartesian()
+        struct_2.to_cartesian()
+        new_comment = "Combined: " + struct_1.comment + " + " + struct_2.comment
+        new_atoms = np.hstack((struct_1.atoms, struct_2.atoms))
+        new_struct = Structure(new_comment, 1.0, None, 
+            struct_1.elements_provided, new_atoms)
+        new_struct.cartesian = True
+        return new_struct
+
+    @staticmethod
+    def cut_and_combine(struct_1, lattice_1, struct_2, lattice_2, d):
+        # If two structures are in fact the same, make a deep copy so that
+        # operations on one will not affect the other.
+        if struct_1 == struct_2:
+            struct_2 = copy.deepcopy(struct_1)
+        # First cut two structures by lattices.
+        struct_1.cut_by_lattice(lattice_1)
+        struct_2.cut_by_lattice(lattice_2)
+        # Force into Cartesian.
+        struct_1.to_cartesian()
+        struct_2.to_cartesian()
+        # Then rotate the two structures to face each other.
+        struct_1.rotate(lattice_1.direction, [0, 0, 1])
+        struct_2.rotate(lattice_2.direction, [0, 0, -1])
+        # Calculate the centroids of two cutting surfaces of the two structures
+        # and recenter them.
+        # TODO: Discuss the method used to calculate the "centroids."
+        epsilon = 1.0 * 10 ** -5
+        cut_face_z_1 = np.amax(struct_1.atoms["position"][:, 2])
+        cut_face_atoms_1 = struct_1.atoms[np.where(abs(struct_1.atoms["position"][:, 2] - cut_face_z_1) <= epsilon)]
+        cut_face_center_1 = np.mean(cut_face_atoms_1["position"], axis=0)
+        struct_1.atoms["position"] -= cut_face_center_1
+
+        cut_face_z_2 = np.amin(struct_2.atoms["position"][:, 2])
+        cut_face_atoms_2 = struct_2.atoms[np.where(abs(struct_2.atoms["position"][:, 2] - cut_face_z_2) <= epsilon)]
+        cut_face_center_2 = np.mean(cut_face_atoms_2["position"], axis=0)
+        struct_2.atoms["position"] -= cut_face_center_2
+
+        # Raise struct_2 by d.
+        struct_2.atoms["position"][:, 2] += abs(d)
+
+        # Combine two structures and recenter.
+        new_struct = Structure.combine(struct_1, struct_2)
+        # TODO: recenter.
+        return new_struct
 
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    struct.to_xyz("bef_rot.xyz")
     lattice = Lattice([1, 1, 0], 1.4)
-    struct.cut_by_lattice(lattice)
-    struct.rotate([1, 1, 0], [0, 0, 1])
-    struct.to_xyz("aft_rot.xyz")
+    d = 2.5
+    new_struct = Structure.cut_and_combine(struct, lattice, struct, lattice, d)
+    new_struct.to_xyz("cut_and_combine.xyz")
 
 if __name__ == '__main__':
     main(sys.argv)
