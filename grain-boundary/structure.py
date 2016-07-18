@@ -55,7 +55,8 @@ class Structure(object):
             return
         new_representation = np.dot(np.transpose(self.coordinate),
                                     np.transpose(self.atoms["position"]))
-        self.atoms["position"] = self.scaling * np.transpose(new_representation)
+        self.atoms["position"] = self.scaling * \
+            np.transpose(new_representation)
         self.cartesian = True
         return
 
@@ -187,10 +188,11 @@ class Structure(object):
         # Both structs should be in Cartesian mode.
         struct_1.to_cartesian()
         struct_2.to_cartesian()
-        new_comment = "Combined: " + struct_1.comment + " + " + struct_2.comment
+        new_comment = ("Combined: " + struct_1.comment + " + " +
+                       struct_2.comment)
         new_atoms = np.hstack((struct_1.atoms, struct_2.atoms))
-        new_struct = Structure(new_comment, 1.0, None, 
-            struct_1.elements_provided, new_atoms)
+        new_struct = Structure(new_comment, 1.0, None,
+                               struct_1.elements_provided, new_atoms)
         new_struct.cartesian = True
         return new_struct
 
@@ -214,12 +216,16 @@ class Structure(object):
         # TODO: Discuss the method used to calculate the "centroids."
         epsilon = 1.0 * 10 ** -5
         cut_face_z_1 = np.amax(struct_1.atoms["position"][:, 2])
-        cut_face_atoms_1 = struct_1.atoms[np.where(abs(struct_1.atoms["position"][:, 2] - cut_face_z_1) <= epsilon)]
+        cut_face_atoms_1 = struct_1.atoms[
+            np.where(abs(struct_1.atoms["position"][:, 2] - cut_face_z_1)
+                     <= epsilon)]
         cut_face_center_1 = np.mean(cut_face_atoms_1["position"], axis=0)
         struct_1.atoms["position"] -= cut_face_center_1
 
         cut_face_z_2 = np.amin(struct_2.atoms["position"][:, 2])
-        cut_face_atoms_2 = struct_2.atoms[np.where(abs(struct_2.atoms["position"][:, 2] - cut_face_z_2) <= epsilon)]
+        cut_face_atoms_2 = struct_2.atoms[
+            np.where(abs(struct_2.atoms["position"][:, 2] - cut_face_z_2)
+                     <= epsilon)]
         cut_face_center_2 = np.mean(cut_face_atoms_2["position"], axis=0)
         struct_2.atoms["position"] -= cut_face_center_2
 
