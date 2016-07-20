@@ -15,6 +15,7 @@ class Structure(object):
         self.coordinate = coordinate
         self.elements_provided = elements_provided
         self.atoms = atoms
+        self.elements = np.unique(atoms["element"])
         self.cartesian = False
 
     def __str__(self):
@@ -237,12 +238,18 @@ class Structure(object):
         # TODO: recenter.
         return new_struct
 
+    @staticmethod
+    def get_periodic_box(atoms_1, atoms_2, steps=(10, 10, 10)):
+        raise NotImplementedError(
+            'Structure.get_periodic_box() has not been implemented.')
+
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    lattice = Lattice([1, 1, 0], 1.4)
+    lattice_1 = Lattice([1, 1, 0], 1.5)
+    lattice_2 = Lattice([1, 1, 1], 1.5)
     d = 2.5
-    new_struct = Structure.cut_and_combine(struct, lattice, struct, lattice, d)
+    new_struct = Structure.cut_and_combine(struct, lattice_1, struct, lattice_2, d)
     new_struct.to_xyz("cut_and_combine.xyz")
 
 if __name__ == '__main__':
