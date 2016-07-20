@@ -249,7 +249,8 @@ def main(argv):
     lattice_1 = Lattice([1, 1, 0], 1.5)
     lattice_2 = Lattice([1, 1, 1], 1.5)
     d = 2.5
-    new_struct = Structure.cut_and_combine(struct, lattice_1, struct, lattice_2, d)
+    new_struct = Structure.cut_and_combine(
+        struct, lattice_1, struct, lattice_2, d)
     new_struct.to_xyz("cut_and_combine.xyz")
 
 if __name__ == '__main__':

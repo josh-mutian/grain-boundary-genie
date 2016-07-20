@@ -24,7 +24,8 @@ def get_rotation_matrix(a, b):
     r = np.identity(3) + np.sin(theta) * A + (1 - cos_theta) * np.dot(A, A)
     return r
 
-def hausdorff_distance(point_set_1, point_set_2, default_value = 10):
+
+def hausdorff_distance(point_set_1, point_set_2, default_value=10):
     # point_set_1 and point_set_2 should have dimension of (_, 3) in Cartesian
     # and should both be numpy array
     n = point_set_1.shape[0]
@@ -39,15 +40,18 @@ def hausdorff_distance(point_set_1, point_set_2, default_value = 10):
 
     # Euclidean distance is used here.
     # Calculate sup_x inf_y d(x, y)
-    dist = np.apply_along_axis(np.linalg.norm, 2, 
+    dist = np.apply_along_axis(
+        np.linalg.norm, 2,
         np.repeat(pt_2, n, axis=1) - np.reshape(pt_1, (1, n, 3)))
     d_1 = np.amax(np.apply_along_axis(np.amin, 1, dist))
     # Calculate sup_y inf_x d(x, y)
-    dist = np.apply_along_axis(np.linalg.norm, 2, 
+    dist = np.apply_along_axis(
+        np.linalg.norm, 2,
         np.repeat(pt_1, m, axis=1) - np.reshape(pt_2, (1, m, 3)))
     d_2 = np.amax(np.apply_along_axis(np.amin, 1, dist))
 
     return max(d_1, d_2)
+
 
 def slice_distances(slice_1, slice_2):
     # slice: list of nparrays, each containing a bunch of length 3D coord.
@@ -57,7 +61,7 @@ def slice_distances(slice_1, slice_2):
     element_count = (np.array(map(len, slice_1)) + np.array(map(len, slice_2)))
     element_frac = element_count / float(np.sum(element_count))
 
-    hausdorff_dists = np.array([hausdorff_distance(x, y) for (x, y) in 
-        zip(slice_1, slice_2)])
+    hausdorff_dists = np.array([hausdorff_distance(x, y) for (x, y) in
+                                zip(slice_1, slice_2)])
 
     return np.dot(element_frac, hausdorff_dists)
