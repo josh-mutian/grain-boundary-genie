@@ -3,7 +3,7 @@ import numpy as np
 
 def get_rotation_matrix(a, b):
     '''
-    a, b are angles represented by a 1*3 arrays.
+    a, b are vectors represented by a 1*3 arrays.
     a -> b
     ref: http://math.stackexchange.com/questions/293116/rotating-one-3d-vector-to-another
     '''
@@ -55,7 +55,7 @@ def hausdorff_distance(point_set_1, point_set_2, default_value=10):
 
 def slice_distances(slice_1, slice_2):
     # slice: list of nparrays, each containing a bunch of length 3D coord.
-    if slice_1.shape[0] != slice_2.shape[0]:
+    if len(slice_1) != len(slice_2):
         raise ValueError('Two slices must have same kinds of elements')
 
     element_count = (np.array(map(len, slice_1)) + np.array(map(len, slice_2)))
