@@ -2,11 +2,22 @@ import numpy as np
 
 
 def get_rotation_matrix(a, b):
-    '''
-    a, b are vectors represented by a 1*3 arrays.
-    a -> b
-    ref: http://math.stackexchange.com/questions/293116/rotating-one-3d-vector-to-another
-    '''
+    """Gets a rotation matrix from one vector to another vector.
+    
+    Args:
+        a (nparray): An nparray of length 3 to represent the from vector.
+        b (nparray): An nparray of length 3 to represent the from vector.
+    
+    Returns:
+        nparray: A 3*3 array representing the rotation matrix.
+    
+    Raises:
+        ValueError: Raised when arguments a or b has length other than 3.
+
+    Reference:
+        http://math.stackexchange.com/questions/293116/rotating-one-3d-vector-to-another
+    """
+
     a = np.array(a)
     b = np.array(b)
     if (len(a) != 3 or len(b) != 3):
@@ -26,6 +37,18 @@ def get_rotation_matrix(a, b):
 
 
 def hausdorff_distance(point_set_1, point_set_2, default_value=10):
+    """Calculates the Hausdorff distance between two point sets.
+    
+    Args:
+        point_set_1 (nparray): An nparray of vectors (length 3).
+        point_set_2 (nparray): An nparray of vectors (length 3).
+        default_value (int, optional): The return value when either set 
+            contains 0 points. Should be deprecated for the future when 
+            better solution is found.
+    
+    Returns:
+        float: The Hausdorff distance.
+    """
     # point_set_1 and point_set_2 should have dimension of (_, 3) in Cartesian
     # and should both be numpy array
     n = point_set_1.shape[0]
@@ -54,6 +77,21 @@ def hausdorff_distance(point_set_1, point_set_2, default_value=10):
 
 
 def slice_distances(slice_1, slice_2):
+    """Calculates the weighted Hausdorff distance between two slices.
+    
+    Args:
+        slice_1 (nparray list): A list of nparray (each row representing a 3-D
+            vector), each nparray represents positions of atoms of one type 
+            of element.
+        slice_2 (nparray list): (Ditto.)
+    
+    Returns:
+        float: The Hausdorff distance weighted by numbers of each element.
+    
+    Raises:
+        ValueError: Raised when slices have different numbers of elements.
+            Should be deprecated for the future when better solution is found.
+    """
     # slice: list of nparrays, each containing a bunch of length 3D coord.
     if len(slice_1) != len(slice_2):
         raise ValueError('Two slices must have same kinds of elements')

@@ -3,11 +3,11 @@ def tabulate_item(row, col_widths, sep="  "):
 
     Args:
         row (str list): A list of strings representing a row in a table, each 
-        item represents a column within a row of the table.
+            item represents a column within a row of the table.
         col_widths (int list): A list of integers representing the column 
-        width of the table.
+            width of the table.
         sep (str, optional): The separation character between rows. Default is
-        two spaces.
+            two spaces.
 
     Returns:
         str: A string representing a tabulated row.
@@ -26,9 +26,9 @@ def tabulate(rows, sep="  "):
 
     Args:
         rows (str list list): A list in which each element is a list of strings
-        representing a row in the table.
+            representing a row in the table.
         sep (str, optional): The separation character between rows. Default is
-        two spaces.
+            two spaces.
 
     Returns:
         str: Formatted string representing a table.

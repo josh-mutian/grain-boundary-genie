@@ -1,3 +1,5 @@
+"""Summary
+"""
 import sys
 import copy
 import numpy as np
@@ -7,9 +9,36 @@ from lattice import Lattice
 
 
 class Structure(object):
-    '''docstring for Structure'''
-
+    """A class representing a crystal structure.
+    
+    Attributes:
+        atoms (nparray): A record type nparray with two fields: 'position' 
+            representing the positions with nparray of length 3, and 'element' 
+            representing the name of the elements as string.        
+        cartesian (bool): Set to true if the coordinate is in Cartesian.
+        comment (str): Description of the crystal structure.
+        coordinate (nparray): A 3*3 nparray with each row representing a 
+            lattice vector.
+        elements (str set): A set of all element types present in the 
+            structure.
+        elements_provided (bool): Whether the element names are specified in 
+            the input file.
+        scaling (float): The scaling.
+    """
     def __init__(self, comment, scaling, coordinate, elements_provided, atoms):
+        """Initializes a new Structure object.
+        
+        Args:
+            comment (str): Description of the crystal structure.
+            scaling (float): The scaling.
+            coordinate (nparray): A 3*3 nparray with each row representing a 
+                lattice vector.
+            elements_provided (bool): Whether the element names are specified 
+                in the input file.
+            atoms (nparray): A record type nparray with two fields: 'position' 
+                representing the positions with nparray of length 3, and 
+                'element' representing the name of the elements as string.
+        """
         self.comment = comment
         self.scaling = scaling
         self.coordinate = coordinate
@@ -19,6 +48,11 @@ class Structure(object):
         self.cartesian = False
 
     def __str__(self):
+        """The to-string method.
+        
+        Returns:
+            str: A string showing all the attributes of an object.
+        """
         res = ''
         res += '=== STRUCTURE: \n'
         res += '*** Comment: \n  ' + self.comment + '\n'
@@ -46,12 +80,26 @@ class Structure(object):
         return res
 
     def cut_by_lattice(self, lattice):
+        """Cuts a Structure object by a Lattice object.
+        
+        Args:
+            lattice (Lattice): The lattice plane that cuts the Structure 
+                object (by deleting atoms in it.)
+        
+        Returns:
+            (void): Does not return.
+        """
         distance = np.dot(lattice.direction,
                           np.transpose(self.atoms['position']))
         self.atoms = self.atoms[np.where(distance < lattice.distance)]
         return
 
     def to_cartesian(self):
+        """Turns a Structure object into Cartesian coordinate.
+        
+        Returns:
+            (void): Does not return.
+        """
         if self.cartesian:
             return
         new_representation = np.dot(np.transpose(self.coordinate),
@@ -62,6 +110,11 @@ class Structure(object):
         return
 
     def to_coordinate(self):
+        """Turns a Structure object into the coordinate provided by itself.
+        
+        Returns:
+            (void): Does not return.
+        """
         if not self.cartesian:
             return
         orig_representation = np.dot(np.linalg.inv(np.transpose(
@@ -72,6 +125,17 @@ class Structure(object):
 
     @staticmethod
     def from_vasp(path):
+        """Reads in .vasp file and create a Structure object as specified.
+        
+        Args:
+            path (str): The path to the .vasp file.
+        
+        Returns:
+            Structure: The Structure object created.
+        
+        Raises:
+            ValueError: Raised when the file cannot be parsed.
+        """
         with open(path, 'r') as in_file:
             comment = in_file.readline().split()[0]
             scaling = float(in_file.readline())
@@ -115,6 +179,14 @@ class Structure(object):
         return Structure(comment, scaling, coordinate, elements_provided, atoms)
 
     def to_vasp(self, name):
+        """Saves the Structure object into a .vasp file.
+        
+        Args:
+            name (str): The path of the output .vasp file.
+        
+        Returns:
+            (void): Does not return.
+        """
         with open(name, 'w') as out_file:
             out_file.write(self.comment + '\n')
             out_file.write(str(self.scaling) + '\n')
@@ -151,6 +223,14 @@ class Structure(object):
         return
 
     def to_xyz(self, name):
+        """Saves the Structure object into a .xyz file.
+        
+        Args:
+            name (str): The path of the output .xyz file.
+        
+        Returns:
+            (void): Does not return.
+        """
         orig_format = self.cartesian
         self.to_cartesian()
         with open(name, 'w') as out_file:
@@ -166,6 +246,15 @@ class Structure(object):
         return
 
     def rotate(self, from_vector, to_vector):
+        """Rotates the atoms in a Structure object.
+        
+        Args:
+            from_vector (nparray): nparray of length 3 to represent a vector.
+            to_vector (nparray): nparray of length 3 to represent a vector.
+        
+        Returns:
+            (void): Does not return.
+        """
         # This is forced to be done in Cartesian mode.
         self.to_cartesian()
         rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
@@ -179,6 +268,19 @@ class Structure(object):
 
     @staticmethod
     def combine(struct_1, struct_2):
+        """Combines two Structure objects.
+        
+        Args:
+            struct_1 (Structure): The first Structure object.
+            struct_2 (Structure): The second Structure object.
+        
+        Returns:
+            Structure: The combined Structure object.
+        
+        Raises:
+            ValueError: Raised when one Structure object provides element 
+                names but the other one does not.
+        """
         # First check that elements_provided values same.
         if struct_1.elements_provided != struct_2.elements_provided:
             raise ValueError(
@@ -199,6 +301,24 @@ class Structure(object):
 
     @staticmethod
     def cut_and_combine(struct_1, lattice_1, struct_2, lattice_2, d):
+        """Cuts two Structure objects by two Lattice objects and combines them.
+        
+        Args:
+            struct_1 (Structure): The first Structure object.
+            lattice_1 (Lattice): The lattice plane that cuts struct_1.
+            struct_2 (Structure): The second Structure object.
+            lattice_2 (Lattice): The lattice plane that cuts struct_2.
+            d (float): The distance between the two Structure objects.
+        
+        Returns:
+            Structure: A cut and combined Structure object.
+        
+        Raises:
+            ValueError: Raised when the two Structures have different element 
+                sets. (This restriction is imposed because of the similarity
+                assessment algorithm. May be relaxed if better algorithm is 
+                found.)
+        """
         # If two structures are in fact the same, make a deep copy so that
         # operations on one will not affect the other.
         if struct_1 == struct_2:
@@ -239,16 +359,31 @@ class Structure(object):
         struct_2.atoms['position'][:, 2] += abs(d)
 
         combined_atoms = np.concatenate((struct_1.atoms, struct_2.atoms))
-        dummy_struct = Structure('Dummy Structure', 1.0, None, True, combined_atoms)
+        dummy_struct = Structure('Dummy Structure', 1.0, None, True, \
+            combined_atoms)
         dummy_struct.cartesian = True
         dummy_struct.to_xyz('Glued structure.xyz')
-        def get_periodic_box(atoms, elements, axis, d, step=10):
-            # print('getting box on axis %d' % axis)
+        def get_periodic_box(atoms, elements, axis, d, slice=10):
+            """Gets a pair of planes so that PBC is met.
+            
+            Args:
+                atoms (nparray): A record type nparray representing atoms.
+                elements (str set): Set of elements present.
+                axis (int): An integer representing which axis the planes are
+                    perpendicular to. 1, 2, and 3 represents x-, y-, and z-axis
+                    respectively.
+                d (float): Distance between cutting interfaces.
+                slice (int, optional): Number of slices created.
+            
+            Returns:
+                float tup: A tuple of length 2 representing the position of 
+                    the pair of planes.
+            """
             ax_min = np.amin(atoms['position'][:, axis])
             ax_max = np.amax(atoms['position'][:, axis])
-            ax_step = (ax_max - ax_min) / step
+            ax_step = (ax_max - ax_min) / slice
             ax_grid = np.arange(start=ax_min + ax_step / 2, 
-                                step=ax_step, stop=ax_max)
+                                slice=ax_step, stop=ax_max)
             ax_slice = map(lambda x : 
                 atoms[np.where(np.logical_and(
                     atoms['position'][:, axis] >= x - ax_step / 2,
@@ -257,23 +392,20 @@ class Structure(object):
             ax_slice = map(lambda x :
                 [x[np.where(x['element'] == e)]['position'] for e in elements],
                 ax_slice)
-            # print(ax_slice)
             ax_optimal_dist = float('inf')
             ax_optimal_slices = None
             for i in np.where(ax_grid <= 0)[0]:
                 for j in np.where(ax_grid >= d)[0]:
-                    # print('%d, %d' % (i, j))
                     dist = geom.slice_distances(ax_slice[i], ax_slice[j])
-                    # print('dist = ' + str(dist))
                     if dist < ax_optimal_dist:
-                        # print('^optimal ')
-                        ax_optimal_slices = (ax_grid[i] - ax_step, ax_grid[j] + ax_step)
+                        ax_optimal_slices = (ax_grid[i] - ax_step, ax_grid[j] \
+                            + ax_step)
                         ax_optimal_dist = dist
-            # print(ax_optimal_slices)
             return ax_optimal_slices
 
         # Get the box, cut the combined structure and recenter.
-        box = [get_periodic_box(combined_atoms, elements, i, d) for i in [0, 1, 2]]
+        box = [get_periodic_box(combined_atoms, elements, i, d) for i in \
+            [0, 1, 2]]
         # print(box)
         for i in range(3):
             combined_atoms = combined_atoms[np.where(np.logical_and(
@@ -299,6 +431,14 @@ class Structure(object):
 
 
 def main(argv):
+    """A main function for testing.
+    
+    Args:
+        argv (str list): A list of input arguments.
+    
+    Returns:
+        (void): Does not return.
+    """
     struct = Structure.from_vasp(argv[1])
     lattice_1 = Lattice([1, 1, 0], 1.5)
     lattice_2 = Lattice([1, 1, 0], 1.5)
