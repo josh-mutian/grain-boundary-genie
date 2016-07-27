@@ -1,16 +1,15 @@
-"""Summary
-"""
 import sys
 import copy
 import numpy as np
 import utilities as util
 import geometry as geom
 from lattice import Lattice
+from periodic import PERIODIC_TABLE
 
 
 class Structure(object):
     """A class representing a crystal structure.
-
+    
     Attributes:
         atoms (nparray): A record type nparray with two fields: 'position' 
             representing the positions with nparray of length 3, and 'element' 
@@ -427,10 +426,44 @@ class Structure(object):
         ])
         # Normalize atom positions.
         new_struct = Structure(struct_1.comment + '+' + struct_2.comment,
-                               1.0, new_coordinate, struct_1.elements_provided, combined_atoms)
+                               1.0, new_coordinate, struct_1.elements_provided, 
+                               combined_atoms)
         new_struct.cartesian = True
         new_struct.to_coordinate()
         return new_struct
+
+    def to_ems(self, path, occ, wobble):
+        """Outputs a Structure object as .ems file.
+        
+        Args:
+            path (str): Path of the output file.
+            occ (float): A constant provided by the user.
+            wobble (float): A constant provided by the user.
+        
+        Returns:
+            (void): Does not return.
+        """
+        self.to_cartesian() # Forced to Cartesian mode.
+        unit_lengths = np.apply_along_axis(lambda x : np.amax(x) - np.amin(x), 
+                                           0, self.atoms['position'])
+        rows = []
+        rows.append(['', '', '%.4f' % unit_lengths[0], '%.4f' % unit_lengths[1],
+                     '%.4f' % unit_lengths[2]])
+        local_dict = {}
+        for ele in self.elements:
+            local_dict[ele] = PERIODIC_TABLE[ele]
+        for ent in self.atoms:
+            rows.append(['', str(local_dict[ent['element']]), 
+                         '%.4f' % (ent['position'][0] / unit_lengths[0]), 
+                         '%.4f' % (ent['position'][1] / unit_lengths[1]),
+                         '%.4f' % (ent['position'][2] / unit_lengths[2]),
+                         '%.1f' % occ, '%.3f' % wobble])
+        with open(path, 'w') as out_file:
+            out_file.write(self.comment + '\n')
+            out_file.write(util.tabulate(rows))
+            out_file.write('\n  -1')
+            out_file.close()
+        return
 
 
 def main(argv):
@@ -443,13 +476,14 @@ def main(argv):
         (void): Does not return.
     """
     struct = Structure.from_vasp(argv[1])
-    lattice_1 = Lattice([1, 1, 0], 1.5)
-    lattice_2 = Lattice([1, 1, 0], 1.5)
-    d = 2.5
-    new_struct = Structure.cut_and_combine(
-        struct, lattice_1, struct, lattice_2, d)
-    new_struct.to_vasp('box_test.vasp')
-    new_struct.to_xyz('box_test.xyz')
+    # lattice_1 = Lattice([1, 1, 0], 1.5)
+    # lattice_2 = Lattice([1, 1, 0], 1.5)
+    # d = 2.5
+    # new_struct = Structure.cut_and_combine(
+    #     struct, lattice_1, struct, lattice_2, d)
+    # new_struct.to_vasp('box_test.vasp')
+    # new_struct.to_xyz('box_test.xyz')
+    struct.to_ems("test_ems.ems", 1.0, 0.076)
 
 if __name__ == '__main__':
     main(sys.argv)
