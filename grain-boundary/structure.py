@@ -9,7 +9,7 @@ from periodic import PERIODIC_TABLE
 
 class Structure(object):
     """A class representing a crystal structure.
-    
+
     Attributes:
         atoms (nparray): A record type nparray with two fields: 'position' 
             representing the positions with nparray of length 3, and 'element' 
@@ -426,7 +426,7 @@ class Structure(object):
         ])
         # Normalize atom positions.
         new_struct = Structure(struct_1.comment + '+' + struct_2.comment,
-                               1.0, new_coordinate, struct_1.elements_provided, 
+                               1.0, new_coordinate, struct_1.elements_provided,
                                combined_atoms)
         new_struct.cartesian = True
         new_struct.to_coordinate()
@@ -434,17 +434,17 @@ class Structure(object):
 
     def to_ems(self, path, occ, wobble):
         """Outputs a Structure object as .ems file.
-        
+
         Args:
             path (str): Path of the output file.
             occ (float): A constant provided by the user.
             wobble (float): A constant provided by the user.
-        
+
         Returns:
             (void): Does not return.
         """
-        self.to_cartesian() # Forced to Cartesian mode.
-        unit_lengths = np.apply_along_axis(lambda x : np.amax(x) - np.amin(x), 
+        self.to_cartesian()  # Forced to Cartesian mode.
+        unit_lengths = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
                                            0, self.atoms['position'])
         rows = []
         rows.append(['', '', '%.4f' % unit_lengths[0], '%.4f' % unit_lengths[1],
@@ -453,8 +453,8 @@ class Structure(object):
         for ele in self.elements:
             local_dict[ele] = PERIODIC_TABLE[ele]
         for ent in self.atoms:
-            rows.append(['', str(local_dict[ent['element']]), 
-                         '%.4f' % (ent['position'][0] / unit_lengths[0]), 
+            rows.append(['', str(local_dict[ent['element']]),
+                         '%.4f' % (ent['position'][0] / unit_lengths[0]),
                          '%.4f' % (ent['position'][1] / unit_lengths[1]),
                          '%.4f' % (ent['position'][2] / unit_lengths[2]),
                          '%.1f' % occ, '%.3f' % wobble])
@@ -467,40 +467,40 @@ class Structure(object):
 
     def normalize(self, shift_only=False):
         """Normalizes a structure so that all coordinate values are in [0, 1].
-        
+
         Args:
             shift_only (bool, optional): When set to True, the structure's 
                 coordinate values will only be shift such that all of them are
                 non-negative. Default is False.
-        
+
         Returns:
             (void): Does not return.
         """
-        self.to_coordinate() # Forced to coordinate.
+        self.to_coordinate()  # Forced to coordinate.
         # Shift so that all coordinates are non-negative.
         shift = np.apply_along_axis(np.amin, 0, self.atoms['position'])
         self.atoms['position'] -= shift
         # Normalize the lengths.
-        norm_factors = np.apply_along_axis(lambda x : np.amax(x) - np.amin(x), 
+        norm_factors = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
                                            0, self.atoms['position'])
         self.coordinate *= np.transpose(np.repeat([norm_factors], 3, axis=0))
         self.atoms['position'] /= norm_factors
-        return 
+        return
 
     def add_padding(self, padding_size):
         """Adds padding onto the current structure.
-        
+
         Args:
             padding_size (list): An array of length 3 showing how many 
                 units of space is added to each side on each direction.
-        
+
         Returns:
             (void): Does not return.
-        
+
         Raises:
             ValueError: Raised when the argument padding_size is not a list of 
                 length 3.
-        
+
         Notice:
             This method is only applicable when coordinate is orthogonal.
         """
@@ -513,6 +513,30 @@ class Structure(object):
         for i in range(3):
             self.coordinate[i] *= (1 + 2 * padding_size[i])
         self.to_coordinate()
+        return
+
+    def update_coordinate(self, new_coord):
+        """Updates the coordinate system.
+
+        Args:
+            new_coord (float list list): A matrix-like structure of 3*3 
+                dimension.
+
+        Returns:
+            (void): Does not return.
+
+        Raises:
+            ValueError: Raised when new new_coord is not 3*3.
+
+        Notice:
+            This will only update the coordinate system without doing anything 
+                to the atoms themselves and does not take care of the atoms
+                that are beyond the boundaries of the new box.
+        """
+        new_coord = np.array(new_coord)
+        if new_coord.shape != (3, 3):
+            raise ValueError('New coordinate must be of dimension 3*3.')
+        self.coordinate = new_coord
         return
 
 
