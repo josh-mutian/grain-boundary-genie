@@ -465,6 +465,56 @@ class Structure(object):
             out_file.close()
         return
 
+    def normalize(self, shift_only=False):
+        """Normalizes a structure so that all coordinate values are in [0, 1].
+        
+        Args:
+            shift_only (bool, optional): When set to True, the structure's 
+                coordinate values will only be shift such that all of them are
+                non-negative. Default is False.
+        
+        Returns:
+            (void): Does not return.
+        """
+        self.to_coordinate() # Forced to coordinate.
+        # Shift so that all coordinates are non-negative.
+        shift = np.apply_along_axis(np.amin, 0, self.atoms['position'])
+        self.atoms['position'] -= shift
+        # Normalize the lengths.
+        norm_factors = np.apply_along_axis(lambda x : np.amax(x) - np.amin(x), 
+                                           0, self.atoms['position'])
+        self.coordinate *= np.transpose(np.repeat([norm_factors], 3, axis=0))
+        self.atoms['position'] /= norm_factors
+        return 
+
+    def add_padding(self, padding_size):
+        """Adds padding onto the current structure.
+        
+        Args:
+            padding_size (list): An array of length 3 showing how many 
+                units of space is added to each side on each direction.
+        
+        Returns:
+            (void): Does not return.
+        
+        Raises:
+            ValueError: Raised when the argument padding_size is not a list of 
+                length 3.
+        
+        Notice:
+            This method is only applicable when coordinate is orthogonal.
+        """
+        if len(padding_size) != 3:
+            raise ValueError('padding_size must have length of 3.')
+        self.normalize(shift_only=True)
+        self.to_cartesian()
+        shift = np.dot(np.array(padding_size), self.coordinate)
+        self.atoms['position'] += shift
+        for i in range(3):
+            self.coordinate[i] *= (1 + 2 * padding_size[i])
+        self.to_coordinate()
+        return
+
 
 def main(argv):
     """A main function for testing.
@@ -483,7 +533,8 @@ def main(argv):
     #     struct, lattice_1, struct, lattice_2, d)
     # new_struct.to_vasp('box_test.vasp')
     # new_struct.to_xyz('box_test.xyz')
-    struct.to_ems("test_ems.ems", 1.0, 0.076)
+    struct.add_padding([0.25, 0.25, 0.25])
+    struct.to_vasp("add_padding.vasp")
 
 if __name__ == '__main__':
     main(sys.argv)
