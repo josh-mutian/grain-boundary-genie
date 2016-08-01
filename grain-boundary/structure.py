@@ -1,3 +1,5 @@
+"""Structure provides a paradigm to represent a crystal structure.
+"""
 import sys
 import copy
 import numpy as np
@@ -9,139 +11,85 @@ from periodic import PERIODIC_TABLE
 
 class Structure(object):
     """A class representing a crystal structure.
-
+    
     Attributes:
-        atoms (nparray): A record type nparray with two fields: 'position' 
-            representing the positions with nparray of length 3, and 'element' 
-            representing the name of the elements as string.        
-        cartesian (bool): Set to true if the coordinate is in Cartesian.
+        cartesian (bool): A record nparray, representing the atoms in the 
+            Cartesian coordinates.
         comment (str): Description of the crystal structure.
-        coordinate (nparray): A 3*3 nparray with each row representing a 
+        coordinates (nparray): A 3*3 nparray with each row representing a 
             lattice vector.
+        direct (TYPE): A record nparray, representing the atoms in direct
+            mode.
         elements (str set): A set of all element types present in the 
-            structure.
-        elements_provided (bool): Whether the element names are specified in 
-            the input file.
-        scaling (float): The scaling.
+            structure.    
     """
 
-    def __init__(self, comment, scaling, coordinate, elements_provided, atoms):
+    def __init__(self, comment, scaling, coordinates, atoms):
         """Initializes a new Structure object.
-
+        
         Args:
             comment (str): Description of the crystal structure.
             scaling (float): The scaling.
-            coordinate (nparray): A 3*3 nparray with each row representing a 
+            coordinates (nparray): A 3*3 nparray with each row representing a 
                 lattice vector.
-            elements_provided (bool): Whether the element names are specified 
-                in the input file.
             atoms (nparray): A record type nparray with two fields: 'position' 
                 representing the positions with nparray of length 3, and 
                 'element' representing the name of the elements as string.
         """
         self.comment = comment
-        self.scaling = scaling
-        self.coordinate = coordinate
-        self.elements_provided = elements_provided
-        self.atoms = atoms
+        self.coordinates = coordinates * scaling
+        epsilon = 5.0 * (10 ** -4)
+        if (abs(np.linalg.det(self.coordinates) - 0.0) <= epsilon):
+            raise ValueError('Coordinate lattice not valid: singular matrix.')
+        self.inverse = np.linalg.inv(self.coordinates)
+        self.direct = atoms
+        self.cartesian = copy.deepcopy(self.direct)
+        self.cartesian['position'] = np.dot(self.cartesian['position'], 
+                                            self.coordinates)
         self.elements = set(np.unique(atoms['element']))
-        self.cartesian = False
 
     def __str__(self):
         """The to-string method.
-
+        
         Returns:
             str: A string showing all the attributes of an object.
         """
         res = ''
         res += '=== STRUCTURE: \n'
         res += '*** Comment: \n  ' + self.comment + '\n'
-        res += '*** Scaling: \n  %.5f\n' % (self.scaling)
         res += '*** Coordinates: \n'
         rows = [['', 'x', 'y', 'z']]
         rows.append(['  a'] + map(lambda x: '%.5f' % x,
-                                  self.coordinate[0].tolist()))
+                                  self.coordinates[0].tolist()))
         rows.append(['  b'] + map(lambda x: '%.5f' % x,
-                                  self.coordinate[1].tolist()))
+                                  self.coordinates[1].tolist()))
         rows.append(['  c'] + map(lambda x: '%.5f' % x,
-                                  self.coordinate[2].tolist()))
+                                  self.coordinates[2].tolist()))
         res += util.tabulate(rows) + '\n'
-        res += '*** Element Names: \n  '
-        res += ('P' if self.elements_provided else 'Not p') + 'rovided\n'
-        res += '*** In Cartesian System: \n  '
-        res += ('Yes' if self.cartesian else 'No') + '\n'
-        res += '*** Atoms: \n'
+        res += '*** Atoms (Direct): \n'
         rows = []
         rows.append(['  a', 'b', 'c', 'element'])
-        for ent in self.atoms:
+        for ent in self.direct:
+            rows.append(['  %.5f' % ent[0][0], '%.5f' % ent[0][1],
+                         '%.5f' % ent[0][2], '%s' % ent[1]])
+        res += util.tabulate(rows)
+        res += '\n*** Atoms (Cartesian): \n'
+        rows = []
+        rows.append(['  x', 'y', 'z', 'element'])
+        for ent in self.cartesian:
             rows.append(['  %.5f' % ent[0][0], '%.5f' % ent[0][1],
                          '%.5f' % ent[0][2], '%s' % ent[1]])
         res += util.tabulate(rows)
         return res
 
-    def cut_by_lattice(self, lattice):
-        """Cuts a Structure object by a Lattice object.
-
-        Args:
-            lattice (Lattice): The lattice plane that cuts the Structure 
-                object (by deleting atoms in it.)
-
-        Returns:
-            (void): Does not return.
-        """
-        distance = np.dot(lattice.direction,
-                          np.transpose(self.atoms['position']))
-        self.atoms = self.atoms[np.where(distance < lattice.distance)]
-        return
-
-    def to_cartesian(self):
-        """Turns a Structure object into Cartesian coordinate.
-
-        Returns:
-            (void): Does not return.
-        """
-        if self.cartesian:
-            return
-        new_representation = np.dot(np.transpose(self.coordinate),
-                                    np.transpose(self.atoms['position']))
-        self.atoms['position'] = self.scaling * \
-            np.transpose(new_representation)
-        self.cartesian = True
-        return
-
-    def to_coordinate(self):
-        """Turns a Structure object into the coordinate provided by itself.
-
-        Returns:
-            (void): Does not return.
-        """
-        if not self.cartesian:
-            return
-        orig_representation = np.dot(np.linalg.inv(np.transpose(
-            self.coordinate)), np.transpose(self.atoms['position']))
-        self.atoms['position'] = np.transpose(orig_representation)
-        self.cartesian = False
-        return
-
     @staticmethod
     def from_vasp(path):
-        """Reads in .vasp file and create a Structure object as specified.
-
-        Args:
-            path (str): The path to the .vasp file.
-
-        Returns:
-            Structure: The Structure object created.
-
-        Raises:
-            ValueError: Raised when the file cannot be parsed.
-        """
-        with open(path, 'r') as in_file:
+        with util.open_read_file(path, 'vasp') as in_file:
             comment = in_file.readline().split()[0]
             scaling = float(in_file.readline())
-            coordinate = np.array([map(float, in_file.readline().split()),
-                                   map(float, in_file.readline().split()),
-                                   map(float, in_file.readline().split())])
+            coordinates = np.array([map(float, in_file.readline().split()),
+                                    map(float, in_file.readline().split()),
+                                    map(float, in_file.readline().split())])
 
             next_line = in_file.readline().split()
             try:
@@ -150,14 +98,11 @@ class Structure(object):
                 element_list = next_line
                 next_line = in_file.readline().split()
                 element_count = map(int, next_line)
-                elements_provided = True
             else:
-                element_list = map(str, range(len(element_count)))
-                elements_provided = False
+                raise ValueError('Element names not provided.')
             finally:
                 if (len(element_list) != len(element_count)):
-                    raise ValueError(
-                        'Element list and count lengths mismatch.')
+                    raise ValueError('Element list and count lengths mismatch.')
 
             elements = [[name for _ in range(count)] for (name, count) in
                         zip(element_list, element_count)]
@@ -176,29 +121,21 @@ class Structure(object):
             atoms = np.array(zip(atoms, elements),
                              dtype=[('position', '>f4', 3), ('element', '|S5')])
 
-        return Structure(comment, scaling, coordinate, elements_provided, atoms)
+        return Structure(comment, scaling, coordinates, atoms)
 
-    def to_vasp(self, name):
-        """Saves the Structure object into a .vasp file.
-
-        Args:
-            name (str): The path of the output .vasp file.
-
-        Returns:
-            (void): Does not return.
-        """
-        with open(name, 'w') as out_file:
-            out_file.write(self.comment + '\n')
-            out_file.write(str(self.scaling) + '\n')
-            for vector in self.coordinate:
+    def to_vasp(self, path):
+        out_name = path if path.split('.')[-1] == 'vasp' else path + '.vasp'
+        with util.open_write_file(out_name) as out_file:
+            out_file.write(self.comment + '\n1.0\n')
+            for vector in self.coordinates:
                 out_file.write(' '.join(map(str, vector.tolist())) + '\n')
 
-            # Generate element list, assuming well ordered.
+            self.direct.sort(order='element')
             element_list = []
             element_count = []
             prev_element = None
             prev_count = None
-            for ele in self.atoms['element']:
+            for ele in self.direct['element']:
                 if (ele != prev_element):
                     if prev_element is not None:
                         element_list.append(prev_element)
@@ -209,228 +146,26 @@ class Structure(object):
                     prev_count += 1
             element_list.append(prev_element)
             element_count.append(prev_count)
-            if self.elements_provided:
-                out_file.write(' '.join(element_list) + '\n')
-                out_file.write(' '.join(map(str, element_count)) + '\n')
-            else:
-                out_file.write(' '.join(element_list) + '\n')
-                out_file.write(' '.join(map(str, element_count)) + '\n')
+            out_file.write(' '.join(element_list) + '\n')
+            out_file.write(' '.join(map(str, element_count)) + '\n')
 
             out_file.write('Direct\n')
-            for pos in self.atoms['position']:
-                out_file.write('%.16f  %.16f  %.16f\n' %
+            for pos in self.direct['position']:
+                out_file.write('%.16f  %.16f  %.16f\n' % 
                                (pos[0], pos[1], pos[2]))
+
         return
 
-    def to_xyz(self, name):
-        """Saves the Structure object into a .xyz file.
-
-        Args:
-            name (str): The path of the output .xyz file.
-
-        Returns:
-            (void): Does not return.
-        """
-        orig_format = self.cartesian
-        self.to_cartesian()
-        with open(name, 'w') as out_file:
-            out_file.write(str(self.atoms.shape[0]) + '\n')
+    def to_xyz(self, path):
+        with util.open_write_file(path) as out_file:
+            out_file.write(str(self.cartesian.shape[0]) + '\n')
             out_file.write(self.comment + '\n')
             rows = []
-            for ent in self.atoms:
+            for ent in self.cartesian:
                 rows.append(['%s' % ent[1], '%.16f' % ent[0][0],
                              '%.16f' % ent[0][1], '%.16f' % ent[0][2]])
             out_file.write(util.tabulate(rows))
-        if not orig_format:
-            self.to_coordinate()
         return
-
-    def rotate(self, from_vector, to_vector):
-        """Rotates the atoms in a Structure object.
-
-        Args:
-            from_vector (nparray): nparray of length 3 to represent a vector.
-            to_vector (nparray): nparray of length 3 to represent a vector.
-
-        Returns:
-            (void): Does not return.
-        """
-        # This is forced to be done in Cartesian mode.
-        self.to_cartesian()
-        rotation_matrix = geom.get_rotation_matrix(from_vector, to_vector)
-        self.atoms['position'] = np.transpose(
-            np.dot(rotation_matrix, np.transpose(self.atoms['position'])))
-        # Also apply the rotation matrix to the original coordinate vectors
-        # in case that they are useful in the future.
-        self.coordinate = np.transpose(
-            np.dot(rotation_matrix, np.transpose(self.coordinate)))
-        return
-
-    @staticmethod
-    def combine(struct_1, struct_2):
-        """Combines two Structure objects.
-
-        Args:
-            struct_1 (Structure): The first Structure object.
-            struct_2 (Structure): The second Structure object.
-
-        Returns:
-            Structure: The combined Structure object.
-
-        Raises:
-            ValueError: Raised when one Structure object provides element 
-                names but the other one does not.
-        """
-        # First check that elements_provided values same.
-        if struct_1.elements_provided != struct_2.elements_provided:
-            raise ValueError(
-                'Cannot combine two structures: ',
-                'They must have same information (element names) ',
-                'provided or not provided.'
-            )
-        # Both structs should be in Cartesian mode.
-        struct_1.to_cartesian()
-        struct_2.to_cartesian()
-        new_comment = ('Combined: ' + struct_1.comment + ' + ' +
-                       struct_2.comment)
-        new_atoms = np.hstack((struct_1.atoms, struct_2.atoms))
-        new_struct = Structure(new_comment, 1.0, None,
-                               struct_1.elements_provided, new_atoms)
-        new_struct.cartesian = True
-        return new_struct
-
-    @staticmethod
-    def cut_and_combine(struct_1, lattice_1, struct_2, lattice_2, d):
-        """Cuts two Structure objects by two Lattice objects and combines them.
-
-        Args:
-            struct_1 (Structure): The first Structure object.
-            lattice_1 (Lattice): The lattice plane that cuts struct_1.
-            struct_2 (Structure): The second Structure object.
-            lattice_2 (Lattice): The lattice plane that cuts struct_2.
-            d (float): The distance between the two Structure objects.
-
-        Returns:
-            Structure: A cut and combined Structure object.
-
-        Raises:
-            ValueError: Raised when the two Structures have different element 
-                sets. (This restriction is imposed because of the similarity
-                assessment algorithm. May be relaxed if better algorithm is 
-                found.)
-        """
-        # If two structures are in fact the same, make a deep copy so that
-        # operations on one will not affect the other.
-        if struct_1 == struct_2:
-            struct_2 = copy.deepcopy(struct_1)
-        # Check that two structures have the same set of elements.
-        if struct_1.elements != struct_2.elements:
-            raise ValueError(
-                'Two structures should have same set of elements.')
-        elements = struct_1.elements
-        # First cut two structures by lattices.
-        struct_1.cut_by_lattice(lattice_1)
-        struct_2.cut_by_lattice(lattice_2)
-        # Force into Cartesian.
-        struct_1.to_cartesian()
-        struct_2.to_cartesian()
-        # Then rotate the two structures to face each other.
-        struct_1.rotate(lattice_1.direction, [0, 0, 1])
-        struct_2.rotate(lattice_2.direction, [0, 0, -1])
-        # Calculate the centroids of two cutting surfaces of the two structures
-        # and recenter them.
-        # TODO: Discuss the method used to calculate the 'centroids.'
-        epsilon = 1.0 * 10 ** -5
-        cut_face_z_1 = np.amax(struct_1.atoms['position'][:, 2])
-        cut_face_atoms_1 = struct_1.atoms[
-            np.where(abs(struct_1.atoms['position'][:, 2] - cut_face_z_1)
-                     <= epsilon)]
-        cut_face_center_1 = np.mean(cut_face_atoms_1['position'], axis=0)
-        struct_1.atoms['position'] -= cut_face_center_1
-
-        cut_face_z_2 = np.amin(struct_2.atoms['position'][:, 2])
-        cut_face_atoms_2 = struct_2.atoms[
-            np.where(abs(struct_2.atoms['position'][:, 2] - cut_face_z_2)
-                     <= epsilon)]
-        cut_face_center_2 = np.mean(cut_face_atoms_2['position'], axis=0)
-        struct_2.atoms['position'] -= cut_face_center_2
-
-        # Raise struct_2 by d.
-        struct_2.atoms['position'][:, 2] += abs(d)
-
-        combined_atoms = np.concatenate((struct_1.atoms, struct_2.atoms))
-        dummy_struct = Structure('Dummy Structure', 1.0, None, True,
-                                 combined_atoms)
-        dummy_struct.cartesian = True
-        dummy_struct.to_xyz('Glued structure.xyz')
-
-        def get_periodic_box(atoms, elements, axis, d, slice=10):
-            """Gets a pair of planes so that PBC is met.
-
-            Args:
-                atoms (nparray): A record type nparray representing atoms.
-                elements (str set): Set of elements present.
-                axis (int): An integer representing which axis the planes are
-                    perpendicular to. 1, 2, and 3 represents x-, y-, and z-axis
-                    respectively.
-                d (float): Distance between cutting interfaces.
-                slice (int, optional): Number of slices created.
-
-            Returns:
-                float tup: A tuple of length 2 representing the position of 
-                    the pair of planes.
-            """
-            ax_min = np.amin(atoms['position'][:, axis])
-            ax_max = np.amax(atoms['position'][:, axis])
-            ax_step = (ax_max - ax_min) / slice
-            ax_grid = np.arange(start=ax_min + ax_step / 2,
-                                slice=ax_step, stop=ax_max)
-            ax_slice = map(lambda x:
-                           atoms[np.where(np.logical_and(
-                               atoms['position'][:, axis] >= x - ax_step / 2,
-                               atoms['position'][:, axis] <= x + ax_step / 2))],
-                           ax_grid)
-            ax_slice = map(lambda x:
-                           [x[np.where(x['element'] == e)]['position']
-                            for e in elements],
-                           ax_slice)
-            ax_optimal_dist = float('inf')
-            ax_optimal_slices = None
-            for i in np.where(ax_grid <= 0)[0]:
-                for j in np.where(ax_grid >= d)[0]:
-                    dist = geom.slice_distances(ax_slice[i], ax_slice[j])
-                    if dist < ax_optimal_dist:
-                        ax_optimal_slices = (ax_grid[i] - ax_step, ax_grid[j]
-                                             + ax_step)
-                        ax_optimal_dist = dist
-            return ax_optimal_slices
-
-        # Get the box, cut the combined structure and recenter.
-        box = [get_periodic_box(combined_atoms, elements, i, d) for i in
-               [0, 1, 2]]
-        # print(box)
-        for i in range(3):
-            combined_atoms = combined_atoms[np.where(np.logical_and(
-                combined_atoms['position'][:, i] >= box[i][0],
-                combined_atoms['position'][:, i] <= box[i][1]))]
-        combined_atoms['position'] -= np.apply_along_axis(np.amin, 0,
-                                                          combined_atoms['position'])
-
-        # Sort atoms by element.
-        combined_atoms.sort(order='element')
-        # Generate new coordinate.
-        new_coordinate = np.array([
-            [box[0][1] - box[0][0], 0.0, 0.0],
-            [0.0, box[1][1] - box[1][0], 0.0],
-            [0.0, 0.0, box[2][1] - box[2][0]]
-        ])
-        # Normalize atom positions.
-        new_struct = Structure(struct_1.comment + '+' + struct_2.comment,
-                               1.0, new_coordinate, struct_1.elements_provided,
-                               combined_atoms)
-        new_struct.cartesian = True
-        new_struct.to_coordinate()
-        return new_struct
 
     def to_ems(self, path, occ, wobble):
         """Outputs a Structure object as .ems file.
@@ -443,16 +178,15 @@ class Structure(object):
         Returns:
             (void): Does not return.
         """
-        self.to_cartesian()  # Forced to Cartesian mode.
         unit_lengths = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
-                                           0, self.atoms['position'])
+                                           0, self.cartesian['position'])
         rows = []
         rows.append(['', '', '%.4f' % unit_lengths[0], '%.4f' % unit_lengths[1],
                      '%.4f' % unit_lengths[2]])
         local_dict = {}
         for ele in self.elements:
             local_dict[ele] = PERIODIC_TABLE[ele]
-        for ent in self.atoms:
+        for ent in self.cartesian:
             rows.append(['', str(local_dict[ent['element']]),
                          '%.4f' % (ent['position'][0] / unit_lengths[0]),
                          '%.4f' % (ent['position'][1] / unit_lengths[1]),
@@ -465,7 +199,31 @@ class Structure(object):
             out_file.close()
         return
 
-    def normalize(self, shift_only=False):
+    def reconcile(self, according_to='C'):
+        """Keep direct and cartesian fields of a Structure object consistent.
+        
+        Args:
+            according_to (str, optional): Description
+        
+        Returns:
+            TYPE: Description
+        
+        Raises:
+            ValueError: Description
+        """
+        if (according_to == 'C'):
+            self.direct = copy.deepcopy(self.cartesian)
+            self.direct['position'] = np.dot(self.cartesian, self.inverse)
+        else if (according_to == 'D'):
+            self.cartesian = copy.deepcopy(self.direct)
+            self.cartesian['position'] = np.dot(self.cartesian['position'], 
+                                                self.coordinates)
+        else:
+            raise ValueError('Argument according_to should either be' + 
+                             '"C" or "D".')
+        return
+
+    def normalize(self):
         """Normalizes a structure so that all coordinate values are in [0, 1].
 
         Args:
@@ -476,9 +234,8 @@ class Structure(object):
         Returns:
             (void): Does not return.
         """
-        self.to_coordinate()  # Forced to coordinate.
         # Shift so that all coordinates are non-negative.
-        shift = np.apply_along_axis(np.amin, 0, self.atoms['position'])
+        shift = np.apply_along_axis(np.amin, 0, self.direct['position'])
         self.atoms['position'] -= shift
         # Normalize the lengths.
         norm_factors = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
@@ -487,78 +244,10 @@ class Structure(object):
         self.atoms['position'] /= norm_factors
         return
 
-    def add_padding(self, padding_size):
-        """Adds padding onto the current structure.
-
-        Args:
-            padding_size (list): An array of length 3 showing how many 
-                units of space is added to each side on each direction.
-
-        Returns:
-            (void): Does not return.
-
-        Raises:
-            ValueError: Raised when the argument padding_size is not a list of 
-                length 3.
-
-        Notice:
-            This method is only applicable when coordinate is orthogonal.
-        """
-        if len(padding_size) != 3:
-            raise ValueError('padding_size must have length of 3.')
-        self.normalize(shift_only=True)
-        self.to_cartesian()
-        shift = np.dot(np.array(padding_size), self.coordinate)
-        self.atoms['position'] += shift
-        for i in range(3):
-            self.coordinate[i] *= (1 + 2 * padding_size[i])
-        self.to_coordinate()
-        return
-
-    def update_coordinate(self, new_coord):
-        """Updates the coordinate system.
-
-        Args:
-            new_coord (float list list): A matrix-like structure of 3*3 
-                dimension.
-
-        Returns:
-            (void): Does not return.
-
-        Raises:
-            ValueError: Raised when new new_coord is not 3*3.
-
-        Notice:
-            This will only update the coordinate system without doing anything 
-                to the atoms themselves and does not take care of the atoms
-                that are beyond the boundaries of the new box.
-        """
-        new_coord = np.array(new_coord)
-        if new_coord.shape != (3, 3):
-            raise ValueError('New coordinate must be of dimension 3*3.')
-        self.coordinate = new_coord
-        return
-
 
 def main(argv):
-    """A main function for testing.
-
-    Args:
-        argv (str list): A list of input arguments.
-
-    Returns:
-        (void): Does not return.
-    """
     struct = Structure.from_vasp(argv[1])
-    # lattice_1 = Lattice([1, 1, 0], 1.5)
-    # lattice_2 = Lattice([1, 1, 0], 1.5)
-    # d = 2.5
-    # new_struct = Structure.cut_and_combine(
-    #     struct, lattice_1, struct, lattice_2, d)
-    # new_struct.to_vasp('box_test.vasp')
-    # new_struct.to_xyz('box_test.xyz')
-    struct.add_padding([0.25, 0.25, 0.25])
-    struct.to_vasp("add_padding.vasp")
+    struct.to_vasp('refact_out')
 
 if __name__ == '__main__':
     main(sys.argv)
