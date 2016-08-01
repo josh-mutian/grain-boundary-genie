@@ -35,6 +35,34 @@ def get_rotation_matrix(a, b):
     r = np.identity(3) + np.sin(theta) * A + (1 - cos_theta) * np.dot(A, A)
     return r
 
+def rotation_angle_matrix(axis, agl):
+    """Get the matrix of rotation about an axis.
+    
+    Args:
+        axis (nparray): nparray of length 3.
+        agl (float): Angle in degrees.
+    
+    Returns:
+        nparray: nparray of dimension 3*3.
+    """
+    norm = np.linalg.norm(np.array(axis))
+    axis = np.linalg.norm(np.array(axis))
+    rad = agl / 360.0
+    if rad == 0 or norm == 0:
+        return np.identity(3)
+    else:
+        axis = axis / norm
+    tensor_prod = np.dot(axis.reshape(3, 1), axis.reshape(3, 1))
+    cross_prod = np.array([
+        [       0, -axis[2],  axis[1]],
+        [ axis[2],        0, -axis[0]],
+        [-axis[1],  axis[0],        0]
+    ])
+    cos = np.cos(rad)
+    sin = np.sin(rad)
+    R = cos * np.identity(3) + sin * cross_prod + (1 - cos) * tensor_prod
+    return R
+
 
 def hausdorff_distance(point_set_1, point_set_2, default_value=10):
     """Calculates the Hausdorff distance between two point sets.
