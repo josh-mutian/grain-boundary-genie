@@ -6,7 +6,7 @@ import numpy as np
 import utilities as util
 import geometry as geom
 from lattice import Lattice
-from periodic import PERIODIC_TABLE
+from constants import PERIODIC_TABLE
 
 
 class Structure(object):
