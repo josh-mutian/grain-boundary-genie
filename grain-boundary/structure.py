@@ -11,7 +11,7 @@ from constants import PERIODIC_TABLE
 
 class Structure(object):
     """A class representing a crystal structure.
-    
+
     Attributes:
         cartesian (bool): A record nparray, representing the atoms in the 
             Cartesian coordinates.
@@ -26,7 +26,7 @@ class Structure(object):
 
     def __init__(self, comment, scaling, coordinates, atoms):
         """Initializes a new Structure object.
-        
+
         Args:
             comment (str): Description of the crystal structure.
             scaling (float): The scaling.
@@ -44,13 +44,13 @@ class Structure(object):
         self.inverse = np.linalg.inv(self.coordinates)
         self.direct = atoms
         self.cartesian = copy.deepcopy(self.direct)
-        self.cartesian['position'] = np.dot(self.cartesian['position'], 
+        self.cartesian['position'] = np.dot(self.cartesian['position'],
                                             self.coordinates)
         self.elements = set(np.unique(atoms['element']))
 
     def __str__(self):
         """The to-string method.
-        
+
         Returns:
             str: A string showing all the attributes of an object.
         """
@@ -102,7 +102,8 @@ class Structure(object):
                 raise ValueError('Element names not provided.')
             finally:
                 if (len(element_list) != len(element_count)):
-                    raise ValueError('Element list and count lengths mismatch.')
+                    raise ValueError(
+                        'Element list and count lengths mismatch.')
 
             elements = [[name for _ in range(count)] for (name, count) in
                         zip(element_list, element_count)]
@@ -151,7 +152,7 @@ class Structure(object):
 
             out_file.write('Direct\n')
             for pos in self.direct['position']:
-                out_file.write('%.16f  %.16f  %.16f\n' % 
+                out_file.write('%.16f  %.16f  %.16f\n' %
                                (pos[0], pos[1], pos[2]))
 
         return
@@ -201,13 +202,13 @@ class Structure(object):
 
     def reconcile(self, according_to='C'):
         """Keep direct and cartesian fields of a Structure object consistent.
-        
+
         Args:
             according_to (str, optional): Description
-        
+
         Returns:
             TYPE: Description
-        
+
         Raises:
             ValueError: Description
         """
@@ -216,10 +217,10 @@ class Structure(object):
             self.direct['position'] = np.dot(self.cartesian, self.inverse)
         else if (according_to == 'D'):
             self.cartesian = copy.deepcopy(self.direct)
-            self.cartesian['position'] = np.dot(self.cartesian['position'], 
+            self.cartesian['position'] = np.dot(self.cartesian['position'],
                                                 self.coordinates)
         else:
-            raise ValueError('Argument according_to should either be' + 
+            raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
         return
 

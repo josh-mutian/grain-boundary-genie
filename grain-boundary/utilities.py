@@ -48,6 +48,7 @@ def tabulate(rows, sep="  "):
     res = "\n".join(map(lambda x: tabulate_item(x, col_widths, sep), rows))
     return res
 
+
 def open_read_file(path, extension):
     if (path.split('.')[-1] != extension):
         raise ValueError('File %s is not of extension %s.' % (path, extension))
@@ -55,11 +56,12 @@ def open_read_file(path, extension):
         raise ValueError('File %s does not exist.' % path)
     return open(path, 'r')
 
+
 def open_write_file(path, overwrite_protect=True):
     if (os.path.isfile(path) and overwrite_protect):
         print('File %s exists.' % path)
-        decision = raw_input('Type "Y" if you want to overwrite or' + 
-            ' any other character(s) to quit.\n')
+        decision = raw_input('Type "Y" if you want to overwrite or' +
+                             ' any other character(s) to quit.\n')
         if (decision != 'Y'):
             sys.exit('You have aborted the task.')
     return open(path, 'w')

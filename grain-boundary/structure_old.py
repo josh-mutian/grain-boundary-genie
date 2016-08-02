@@ -9,7 +9,7 @@ from constants import PERIODIC_TABLE
 
 class Structure(object):
     """A class representing a crystal structure.
-    
+
     Attributes:
         atoms (nparray): A record type nparray with two fields: 'position' 
             representing the positions with nparray of length 3, and 'element' 
@@ -27,7 +27,7 @@ class Structure(object):
 
     def __init__(self, comment, scaling, coordinate, atoms):
         """Initializes a new Structure object.
-        
+
         Args:
             comment (str): Description of the crystal structure.
             scaling (float): The scaling.
@@ -42,7 +42,7 @@ class Structure(object):
         self.direct = atoms
         self.cartesian = copy.deepcopy(self.atoms_direct)
         self.cartesian['position'] = np.transpose(np.dot(
-            np.transpose(self.coordinate), 
+            np.transpose(self.coordinate),
             np.transpose(self.cartesian['position'])))
         self.elements = set(np.unique(atoms['element']))
 

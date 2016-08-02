@@ -25,8 +25,8 @@ def get_rotation_matrix(vec_1, vec_2):
     x = np.cross(vec_1, vec_2)
     x = x / np.linalg.norm(x)
 
-    cos = np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) * 
-        np.linalg.norm(vec_2))
+    cos = np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) *
+                                  np.linalg.norm(vec_2))
     theta = np.arccos(cos_theta)
     sin = np.sin(theta)
     cross_prod = np.array([
@@ -38,13 +38,14 @@ def get_rotation_matrix(vec_1, vec_2):
         (1 - cos) * np.dot(cross_prod, cross_prod)
     return r
 
+
 def rotation_angle_matrix(axis, agl):
     """Get the matrix of rotation about an axis.
-    
+
     Args:
         axis (nparray): nparray of length 3.
         agl (float): Angle in radians.
-    
+
     Returns:
         nparray: nparray of dimension 3*3.
     """
@@ -64,9 +65,11 @@ def rotation_angle_matrix(axis, agl):
     r = cos * np.identity(3) + sin * cross_prod + (1 - cos) * tensor_prod
     return r
 
+
 def angle_between_vectors(agl_1, agl_2):
-    return np.arccos(np.dot(agl_1, agl_2) / (np.linalg.norm(agl_1) * 
-        np.linagl.norm(agl_2)))
+    return np.arccos(np.dot(agl_1, agl_2) / (np.linalg.norm(agl_1) *
+                                             np.linagl.norm(agl_2)))
+
 
 def hausdorff_distance(point_set_1, point_set_2, default_value=10):
     """Calculates the Hausdorff distance between two point sets.
@@ -136,9 +139,10 @@ def slice_distances(slice_1, slice_2):
 
     return np.dot(element_frac, hausdorff_dists)
 
+
 def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     """Return the mutual view angle.
-    
+
     Args:
         orien_1 (nparray): Grain 1 orientation.
         orien_2 (nparray): Grain 2 orientation.
@@ -146,14 +150,14 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
             angles. First item in the list considered most preferable viewing 
             angle.
         tol (float): Viewing angle tolerance, in radians.
-    
+
     Returns:
         nparray: The first valid mutual view angle in a list of options.
     """
     if (len(view_agls) <= 0):
         # If no view_agls provided, return the default viewing angle.
         return np.array([1, -orien_1[0] / orien_1[1], 0])
-    tol = np.arccos(np.cos(tol)) # Make tolerance angle in range [0, PI]
+    tol = np.arccos(np.cos(tol))  # Make tolerance angle in range [0, PI]
     # Normalize all the vectors so that dot product is cosine value.
     view_agls /= np.apply_along_axis(
         np.linalg.norm, 1, view_agls).reshape((len(view_agls), 1))
@@ -162,7 +166,7 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     align_1 = np.absolute(np.arccos(np.dot(view_agls, orien_1_norm)) - PI / 2)
     align_2 = np.absolute(np.arccos(np.dot(view_agls, orien_2_norm)) - PI / 2)
     agl_1 = view_agls[np.where(align_1 <= tol)]
-    agl_all = view_agls[np.where(np.logical_and(align_2 <= tol, 
+    agl_all = view_agls[np.where(np.logical_and(align_2 <= tol,
                                                 align_1 <= tol))]
     if len(agl_all) > 0:
         return agl_all[0]
@@ -170,6 +174,7 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
         return agl_1[0]
     else:
         return np.array([1, -orien_1[0] / orien_1[1], 0])
+
 
 def main():
     # orien_1 = np.array([0, 1, -1]).astype(float)
