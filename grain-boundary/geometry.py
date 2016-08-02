@@ -142,21 +142,27 @@ def slice_distances(slice_1, slice_2):
 
 def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     """Return the mutual view angle.
-
+    
     Args:
         orien_1 (nparray): Grain 1 orientation.
         orien_2 (nparray): Grain 2 orientation.
         view_agls (nparray): A matrix of n * 3 representing STEM viewable 
             angles. First item in the list considered most preferable viewing 
-            angle.
+            angle. (This angle should not be very big, or the transformation
+            may not be orthonormal.)
         tol (float): Viewing angle tolerance, in radians.
-
+    
     Returns:
-        nparray: The first valid mutual view angle in a list of options.
+        nparray: The first valid mutual view angle in a list of options, or if 
+            there is no valid angle, return the default angle which is 
+            perpendicular to orien_1. Notice that all results are normalized.
+        bool: Whether the configuration is STEM viewable.
     """
+    default_agl = np.array([1, -orien_1[0] / orien_1[1], 0])
+    default_agl /= np.linalg.norm(default_agl)
     if (len(view_agls) <= 0):
         # If no view_agls provided, return the default viewing angle.
-        return np.array([1, -orien_1[0] / orien_1[1], 0])
+        return default_agl, False
     tol = np.arccos(np.cos(tol))  # Make tolerance angle in range [0, PI]
     # Normalize all the vectors so that dot product is cosine value.
     view_agls /= np.apply_along_axis(
@@ -169,11 +175,11 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     agl_all = view_agls[np.where(np.logical_and(align_2 <= tol,
                                                 align_1 <= tol))]
     if len(agl_all) > 0:
-        return agl_all[0]
+        return agl_all[0], True
     elif len(agl_1) > 0:
-        return agl_1[0]
+        return agl_1[0], False
     else:
-        return np.array([1, -orien_1[0] / orien_1[1], 0])
+        return default_agl, False
 
 
 def main():
