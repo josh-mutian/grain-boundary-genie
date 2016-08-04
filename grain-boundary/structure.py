@@ -244,6 +244,7 @@ class Structure(object):
         """
         # First calculate the inverse while strengthening the diagonal.
         new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
+        # supercell_pos and search_dirs are from original LabView code.
         supercell_pos = map(np.array, [
             [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 
             [0, -1, 0], [0, 0, -1]
@@ -278,8 +279,11 @@ class Structure(object):
                 next_pos = map(lambda x : x + current_pos, search_dirs)
                 next_pos = [p for p in next_pos if not p in searched_pos]
                 supercell_pos.append(next_pos)
+        # Replace the coordinate system and atom positions.
         self.direct = shifted
+        self.direct.sort(order='element')
         self.coordinates = lattice_vecs
+        # Make the Cartesian coordinates consistent.
         self.reconcile(according_to='D')
         return
 
