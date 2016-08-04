@@ -181,6 +181,11 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     else:
         return default_agl, False
 
+def normalize_vector(vec):
+    return vec / np.linalg.norm(vec)
+
+def valid_direct_vec(vec, epsilon=1e-5):
+    return np.all(np.absolute(vec - 0.5) < 0.5 + epsilon)
 
 def main():
     # orien_1 = np.array([0, 1, -1]).astype(float)
@@ -188,6 +193,7 @@ def main():
     # tol = np.deg2rad(5)
     # view_agls = np.array([[1, 0, 0], [1, 1, 0], [2, 1, 0], [1, 1, 1], [2, 1, 1]]).astype(float)
     # print(mutual_view_angle(orien_1, orien_2, view_agls, tol))
+    return 0
 
 if __name__ == '__main__':
     main()
