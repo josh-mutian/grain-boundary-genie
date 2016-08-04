@@ -45,7 +45,7 @@ class Structure(object):
         self.direct = atoms
         self.cartesian = copy.deepcopy(self.direct)
         self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                            self.coordinates)
+                                            np.transpose(self.coordinates))
         self.elements = set(np.unique(atoms['element']))
 
     def __str__(self):
@@ -214,35 +214,73 @@ class Structure(object):
         """
         if (according_to == 'C'):
             self.direct = copy.deepcopy(self.cartesian)
-            self.direct['position'] = np.dot(self.cartesian, self.inverse)
-        else if (according_to == 'D'):
+            self.direct['position'] = np.dot(self.cartesian['position'], 
+                                             np.transpose(self.inverse))
+        elif (according_to == 'D'):
             self.cartesian = copy.deepcopy(self.direct)
             self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                                self.coordinates)
+                                                np.transpose(self.coordinates))
         else:
             raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
         return
 
-    def normalize(self):
-        """Normalizes a structure so that all coordinate values are in [0, 1].
+    def transform(self, trans_mat):
+        self.coordinates['position'] = np.dot(self.coordinates, 
+                                              np.transpose(trans_mat))
+        self.reconcile(according_to='D')
+        return
 
+    def grow_to_supercell(self, lattice_vecs, max_atoms):
+        """Grow the current struct to a super cell to fill the new lattice box.
+        
         Args:
-            shift_only (bool, optional): When set to True, the structure's 
-                coordinate values will only be shift such that all of them are
-                non-negative. Default is False.
-
+            lattice_vecs (TYPE): nparray of 3*3 representing 3 new lattice 
+                vectors.
+            max_atoms (TYPE): Maximum number of atoms.
+        
         Returns:
             (void): Does not return.
         """
-        # Shift so that all coordinates are non-negative.
-        shift = np.apply_along_axis(np.amin, 0, self.direct['position'])
-        self.atoms['position'] -= shift
-        # Normalize the lengths.
-        norm_factors = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
-                                           0, self.atoms['position'])
-        self.coordinate *= np.transpose(np.repeat([norm_factors], 3, axis=0))
-        self.atoms['position'] /= norm_factors
+        # First calculate the inverse while strengthening the diagonal.
+        new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
+        supercell_pos = map(np.array, [
+            [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 
+            [0, -1, 0], [0, 0, -1]
+        ])
+        search_dirs = map(np.array, [
+            [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], 
+            [0, 0, -1], [1, 1, 0], [1, -1, 0], [-1, 1, 0], [0, 1, 1], 
+            [0, 1, -1], [0, -1, 1], [1, 0, 1], [1, 0, -1], [-1, 0, 1], 
+            [1, 1, 1], [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]
+        ])
+        searched_pos = set()
+        enlarged_struct = []
+        while len(enlarged_struct) <= max_atoms and len(supercell_pos) > 0:
+            current_pos = supercell_pos.pop(0)
+            searched_pos.add(tuple(current_pos.tolist()))
+            shift_vector = np.dot(self.coordinates, current_pos)
+            shifted = copy.deepcopy(self.cartesian)
+            shifted['position'] += shift_vector
+            # Convert the shifted vectors into direct with respect to the 
+            # new coordinate system given by lattice_vec
+            shifted['position'] = np.dot(shifted_cartesian['position'], 
+                                         np.transpose(new_coord_inv))
+            # Filter out the atoms that are contained by the new coordinate 
+            # system.
+            shifted = shifted[np.apply_along_axis(geom.valid_direct_vec, 
+                                                  1, shifted)]
+            if len(shifted) > 0:
+                if len(enlarged_struct) > 0:
+                    enlarged_struct = np.vstack(enlarged_struct, shifted)
+                else:
+                    enlarged_struct = shifted
+                next_pos = map(lambda x : x + current_pos, search_dirs)
+                next_pos = [p for p in next_pos if not p in searched_pos]
+                supercell_pos.append(next_pos)
+        self.direct = shifted
+        self.coordinates = lattice_vecs
+        self.reconcile(according_to='D')
         return
 
 
