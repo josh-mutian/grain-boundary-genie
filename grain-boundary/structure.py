@@ -158,7 +158,8 @@ class Structure(object):
         return
 
     def to_xyz(self, path):
-        with util.open_write_file(path) as out_file:
+        out_name = path if path.split('.')[-1] == 'xyz' else path + '.xyz'
+        with util.open_write_file(out_name) as out_file:
             out_file.write(str(self.cartesian.shape[0]) + '\n')
             out_file.write(self.comment + '\n')
             rows = []
@@ -193,7 +194,8 @@ class Structure(object):
                          '%.4f' % (ent['position'][1] / unit_lengths[1]),
                          '%.4f' % (ent['position'][2] / unit_lengths[2]),
                          '%.1f' % occ, '%.3f' % wobble])
-        with open(path, 'w') as out_file:
+        out_name = path if path.split('.')[-1] == 'ems' else path + '.ems'
+        with open(out_name, 'w') as out_file:
             out_file.write(self.comment + '\n')
             out_file.write(util.tabulate(rows))
             out_file.write('\n  -1')
@@ -259,28 +261,31 @@ class Structure(object):
         enlarged_struct = []
         while len(enlarged_struct) <= max_atoms and len(supercell_pos) > 0:
             current_pos = supercell_pos.pop(0)
+            if (tuple(current_pos.tolist()) in searched_pos):
+                # If we have searched the position, just skip.
+                continue
             searched_pos.add(tuple(current_pos.tolist()))
             shift_vector = np.dot(self.coordinates, current_pos)
             shifted = copy.deepcopy(self.cartesian)
             shifted['position'] += shift_vector
             # Convert the shifted vectors into direct with respect to the 
             # new coordinate system given by lattice_vec
-            shifted['position'] = np.dot(shifted_cartesian['position'], 
+            shifted['position'] = np.dot(shifted['position'], 
                                          np.transpose(new_coord_inv))
             # Filter out the atoms that are contained by the new coordinate 
             # system.
             shifted = shifted[np.apply_along_axis(geom.valid_direct_vec, 
-                                                  1, shifted)]
+                                                  1, shifted['position'])]
             if len(shifted) > 0:
                 if len(enlarged_struct) > 0:
-                    enlarged_struct = np.vstack(enlarged_struct, shifted)
+                    enlarged_struct = np.concatenate((enlarged_struct, shifted))
                 else:
                     enlarged_struct = shifted
                 next_pos = map(lambda x : x + current_pos, search_dirs)
-                next_pos = [p for p in next_pos if not p in searched_pos]
-                supercell_pos.append(next_pos)
+                next_pos = [p for p in next_pos if not tuple(p.tolist()) in searched_pos]
+                supercell_pos += next_pos
         # Replace the coordinate system and atom positions.
-        self.direct = shifted
+        self.direct = np.unique(enlarged_struct)
         self.direct.sort(order='element')
         self.coordinates = lattice_vecs
         # Make the Cartesian coordinates consistent.
@@ -290,7 +295,9 @@ class Structure(object):
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    struct.to_vasp('refact_out')
+    new_coord = np.identity(3) * 30.0
+    struct.grow_to_supercell(new_coord, 10000)
+    struct.to_xyz('grown')
 
 if __name__ == '__main__':
     main(sys.argv)
