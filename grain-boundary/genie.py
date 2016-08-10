@@ -5,21 +5,29 @@ from structure import Structure
 import geometry as geom
 
 def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
-    view_agls = np.array([[1, 0, 0], [1, 1, 0], [2, 1, 0], [1, 1, 1], [2, 1, 1]]).astype(float)
-    view_agl, _ = geom.mutual_view_angle(orien_1, orien_2, view_agls, np.deg2rad(10))
-    trans_1 = np.vstack([view_agl, np.cross(view_agl, orien_1), orien_1])
-    trans_1 = np.apply_along_axis(geom.normalize_vector, 1, trans_1)
-    trans_2 = np.array([view_agl, np.cross(view_agl, orien_2), orien_2])
-    trans_2 = np.apply_along_axis(geom.normalize_vector, 1, trans_2)
-    struct_1 = struct
-    struct_2 = copy.deepcopy(struct_1)
+    trans_1 = np.dot(geom.rotation_angle_matrix(np.array([0., 0., 1.]), 
+                                                twist_agl),
+                     geom.get_rotatino_matrix(orien_1, np.array([0., 0., 1.])))
+    trans_2 = geom.get_rotatino_matrix(orien_2, np.array([0., 0., 1.]))
+    box_1 = np.transpose(np.dot(trans_1, np.transpose(struct.coordinates)))
+    box_2 = np.transpose(np.dot(trans_2, np.transpose(struct.coordinates)))
+    box_1 = geom.rebase_coord_sys(box_1) + trans_vec
+    box_2 = geom.rebase_coord_sys(box_2)
 
-    struct_1.transform(trans_1)
-    struct_1.to_vasp('1_transform')
-    struct_2.transform(trans_2)
-    struct_2.to_vasp('2_transform')
-    # raise NotImplementedError('gb_genie() not implemented.')
-    return
+def find_coincident_points(box_1, box_2, max_int, tol):
+    res = []
+    for i in range(tol):
+        for j in range(tol):
+            for k in range(tol):
+                vec = np.dot(np.array([i, j, k]), box_1)
+                nearest_int_mult = np.rint(np.dot(vec, np.linalg.inv(box_2)))
+                dist = np.linalg.norm(np.dot(nearest_int_mult, box_2) - vec)
+                if dist <= tol:
+                    res.append(vec)
+    res = np.array(np)
+    res = res[np.argsort(np.apply_along_axis(np.linalg.norm, 1, res))]
+    return res
+
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])

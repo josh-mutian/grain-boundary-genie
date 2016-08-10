@@ -66,9 +66,9 @@ def rotation_angle_matrix(axis, agl):
     return r
 
 
-def angle_between_vectors(agl_1, agl_2):
-    return np.arccos(np.dot(agl_1, agl_2) / (np.linalg.norm(agl_1) *
-                                             np.linagl.norm(agl_2)))
+def angle_between_vectors(vec_1, vec_2):
+    return np.arccos(np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) *
+                                             np.linagl.norm(vec_2)))
 
 
 def hausdorff_distance(point_set_1, point_set_2, default_value=10):
@@ -156,13 +156,12 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
         nparray: The first valid mutual view angle in a list of options, or if 
             there is no valid angle, return the default angle which is 
             perpendicular to orien_1. Notice that all results are normalized.
-        bool: Whether the configuration is STEM viewable.
     """
     default_agl = np.array([1, -orien_1[0] / orien_1[1], 0])
     default_agl /= np.linalg.norm(default_agl)
     if (len(view_agls) <= 0):
         # If no view_agls provided, return the default viewing angle.
-        return default_agl, False
+        return default_agl
     tol = np.arccos(np.cos(tol))  # Make tolerance angle in range [0, PI]
     # Normalize all the vectors so that dot product is cosine value.
     view_agls /= np.apply_along_axis(
@@ -175,17 +174,20 @@ def mutual_view_angle(orien_1, orien_2, view_agls, tol):
     agl_all = view_agls[np.where(np.logical_and(align_2 <= tol,
                                                 align_1 <= tol))]
     if len(agl_all) > 0:
-        return agl_all[0], True
+        return agl_all[0]
     elif len(agl_1) > 0:
-        return agl_1[0], False
+        return agl_1[0]
     else:
-        return default_agl, False
+        return default_agl
 
 def normalize_vector(vec):
     return vec / np.linalg.norm(vec)
 
 def valid_direct_vec(vec, epsilon=1e-5):
     return np.all(np.absolute(vec - 0.5) < 0.5 + epsilon)
+
+def rebase_coord_sys(coordinates):
+    return map(lambda x : x - np.amin(x), coordinates)
 
 def main():
     # orien_1 = np.array([0, 1, -1]).astype(float)
