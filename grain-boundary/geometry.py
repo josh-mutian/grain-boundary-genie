@@ -23,11 +23,11 @@ def get_rotation_matrix(vec_1, vec_2):
     if (len(vec_1) != 3 or len(vec_2) != 3):
         raise ValueError("vec_1 and b must be of length 3.")
     x = np.cross(vec_1, vec_2)
-    x = x / np.linalg.norm(x)
+    x = x / np.linalg.norm(x) if np.linalg.norm(x) != 0 else x
 
     cos = np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) *
                                   np.linalg.norm(vec_2))
-    theta = np.arccos(cos_theta)
+    theta = np.arccos(cos)
     sin = np.sin(theta)
     cross_prod = np.array([
         [    0, -x[2],  x[1]],
@@ -68,7 +68,7 @@ def rotation_angle_matrix(axis, agl):
 
 def angle_between_vectors(vec_1, vec_2):
     return np.arccos(np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) *
-                                             np.linagl.norm(vec_2)))
+                                             np.linalg.norm(vec_2)))
 
 
 def hausdorff_distance(point_set_1, point_set_2, default_value=10):
