@@ -58,7 +58,7 @@ def open_read_file(path, extension):
 
 
 def open_write_file(path, overwrite_protect=True):
-    if (os.path.isfile(path) and overwrite_protect):
+    if False: #(os.path.isfile(path) and overwrite_protect):
         print('File %s exists.' % path)
         decision = raw_input('Type "Y" if you want to overwrite or' +
                              ' any other character(s) to quit.\n')
