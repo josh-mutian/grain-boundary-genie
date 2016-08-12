@@ -10,17 +10,30 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     trans_1 = np.dot(geom.rotation_angle_matrix(np.array([0., 0., 1.]), 
                                                 twist_agl),
                      geom.get_rotation_matrix(orien_1, np.array([0., 0., 1.])))
+    print(trans_1)
     trans_2 = geom.get_rotation_matrix(orien_2, np.array([0., 0., 1.]))
+    print(trans_2)
     box_1 = np.transpose(np.dot(trans_1, np.transpose(struct.coordinates)))
     box_2 = np.transpose(np.dot(trans_2, np.transpose(struct.coordinates)))
-    search_size = 20
-    coindicent_pts = find_coincident_points(box_1, box_2, search_size, 1.0)
+    search_size = 10
+    # coindicent_pts = find_coincident_points(box_1, box_2, search_size, 4.0)
     # print(coindicent_pts)
-    print(str(len(coindicent_pts)) + ' / ' + str(search_size**3))
-    lattice = find_overlattice(coindicent_pts, PI / 6, PI / 2)
-    print(lattice)
-    struct.grow_to_supercell(lattice, 10000)
-    struct.to_vasp('grow_1')
+    # print(str(len(coindicent_pts)) + ' / ' + str(search_size**3 - 1))
+    # lattice = find_overlattice(coindicent_pts, PI / 6, PI / 2)
+    # print(lattice)
+    lattice = np.identity(3) * 30.0
+    struct_1 = struct
+    struct_2 = copy.deepcopy(struct)
+    struct_1.transform(trans_1)
+    struct_2.transform(trans_2)
+    print(struct_1.coordinates)
+    print(struct_1.coordinates)
+    struct_1.grow_to_supercell(lattice, 10000)
+    struct_2.grow_to_supercell(lattice, 10000)
+    struct_1.to_vasp('grown_1')
+    struct_1.to_vasp('grown_2')
+    glued_struct = combine_structures(struct_1, struct_2)
+    glued_struct.to_xyz('grow_and_glue')
     return 0
 
 def find_coincident_points(box_1, box_2, max_int, tol):
@@ -36,24 +49,26 @@ def find_coincident_points(box_1, box_2, max_int, tol):
                     res.append(vec)
     res = np.array(res)
     res = res[np.argsort(np.apply_along_axis(np.linalg.norm, 1, res))]
-    return res[1:]
+    return res[1:] # Remove the [0, 0, 0] point.
 
-def cartesian_product(array, level, unique=False):
-    res = np.zeros(len(array) ** level)
+def cartesian_product(array, level):
+    res = []
     for i in range(level):
-        res = np.vstack((res, np.tile(np.repeat(array, 
-                                                len(array) ** (level - i - 1)),
-                                      len(array) ** i)))
-    res = res[1:, :]
+        res.append(np.tile(np.repeat(array, len(array) ** (level - i - 1)),
+                           len(array) ** i))
+    res = np.transpose(np.array(res))
     return res
 
 def find_overlattice(coincident_pts, min_agl, max_agl, linear_eps=1e-5):
-    res = []
+    res = [] # Resulting lattice vectors: list of 3*3 nparrays.
+    vol = [] # Volume of boxes: list of floats.
+    # CAN BE VECTORIZED.
     for i in range(len(coincident_pts)):
         for j in range(i + 1, len(coincident_pts)):
             for k in range(j + 1, len(coincident_pts)):
                 lat_vecs = coincident_pts[[i, j, k]]
-                if abs(np.linalg.det(lat_vecs)) < linear_eps:
+                det = np.linalg.det(lat_vecs)
+                if det < linear_eps:
                     continue
                 vec_agls = np.array([
                     geom.angle_between_vectors(lat_vecs[0], lat_vecs[1]),
@@ -62,21 +77,30 @@ def find_overlattice(coincident_pts, min_agl, max_agl, linear_eps=1e-5):
                 ])
                 if np.all(vec_agls > min_agl) and np.all(vec_agls < max_agl):
                     res.append(lat_vecs)
-    # lat_len_diff = np.array(map(
-    #     lambda x : np.sum((x - np.apply_along_axis(np.mean, 0, x)) ** 2), 
-    #     res))
-    lat_len_diff = np.array(map(
-        lambda x : np.sum(x ** 2), 
-        res))
+                    vol.append(det)
     res = np.array(res)
-    print(res)
-    res = res[np.argsort(lat_len_diff)]
+    vol = np.array(vol)
+    vec_len_sum = np.array(map(lambda x : np.sum(x ** 2), res))
+    res = res[np.argsort(vec_len_sum)]
     return res[0, :, :]
 
+def combine_structures(struct_1, struct_2):
+    # Assuming that these structures have same lattice vector sets. We extend
+    # the c direction by 2 and shift struct_2 to that place. 
+    struct_1.direct['position'][:, 2] /= 2.0
+    struct_2.direct['position'][:, 2] /= 2.0
+    struct_2.direct['position'][:, 2] += 0.5
+    struct_1.to_vasp('test_1')
+    struct_2.to_vasp('test_2')
+    struct_1.direct = np.concatenate((struct_1.direct, struct_2.direct))
+    struct_1.coordinates[2] *= 2.0
+    struct_1.comment = struct_1.comment + '_' + struct_2.comment
+    struct_1.reconcile(according_to='D')
+    return struct_1
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    gb_genie(struct, np.array([1., 1., .0]), np.array([1., 2., 0]), 0, np.array([0, 0, 0]))
+    gb_genie(struct, np.array([1., 1., .0]), np.array([1., 2., 0]), 0.15, np.array([0, 0, 0]))
     
 if __name__ == '__main__':
     main(sys.argv)

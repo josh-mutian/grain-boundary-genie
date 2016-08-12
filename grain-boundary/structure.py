@@ -36,7 +36,7 @@ class Structure(object):
                 representing the positions with nparray of length 3, and 
                 'element' representing the name of the elements as string.
         """
-        self.comment = comment
+        self.comment = '_'.join(comment.split())
         self.coordinates = coordinates * scaling
         epsilon = 5.0 * (10 ** -4)
         if (abs(np.linalg.det(self.coordinates) - 0.0) <= epsilon):
@@ -228,8 +228,7 @@ class Structure(object):
         return
 
     def transform(self, trans_mat):
-        self.coordinates['position'] = np.dot(self.coordinates, 
-                                              np.transpose(trans_mat))
+        self.coordinates = np.dot(self.coordinates, np.transpose(trans_mat))
         self.reconcile(according_to='D')
         return
 
