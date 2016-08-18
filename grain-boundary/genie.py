@@ -10,29 +10,29 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     trans_1 = np.dot(geom.rotation_angle_matrix(np.array([0., 0., 1.]), 
                                                 twist_agl),
                      geom.get_rotation_matrix(orien_1, np.array([0., 0., 1.])))
-    print(trans_1)
     trans_2 = geom.get_rotation_matrix(orien_2, np.array([0., 0., 1.]))
+    print(trans_1)
     print(trans_2)
     box_1 = np.transpose(np.dot(trans_1, np.transpose(struct.coordinates)))
     box_2 = np.transpose(np.dot(trans_2, np.transpose(struct.coordinates)))
-    search_size = 10
-    # coindicent_pts = find_coincident_points(box_1, box_2, search_size, 4.0)
-    # print(coindicent_pts)
-    # print(str(len(coindicent_pts)) + ' / ' + str(search_size**3 - 1))
-    # lattice = find_overlattice(coindicent_pts, PI / 6, PI / 2)
-    # print(lattice)
-    lattice = np.identity(3) * 30.0
+    search_size = 25
+    coindicent_pts = find_coincident_points(box_1, box_2, search_size, 0.5)
+    print(str(len(coindicent_pts)) + ' / ' + str(search_size**3 - 1))
+    lattice = find_overlattice(coindicent_pts, PI / 5, PI / 2)
+    print(lattice)
+    print('Expected atoms: ' + str(2 * len(struct.direct) / np.linalg.det(struct.coordinates) * np.linalg.det(lattice)))
     struct_1 = struct
     struct_2 = copy.deepcopy(struct)
     struct_1.transform(trans_1)
     struct_2.transform(trans_2)
-    print(struct_1.coordinates)
-    print(struct_1.coordinates)
+    print("Trans 1 det:" + str(np.linalg.det(trans_1)))
+    print("Trans 2 det:" + str(np.linalg.det(trans_2)))
     struct_1.grow_to_supercell(lattice, 10000)
     struct_2.grow_to_supercell(lattice, 10000)
     struct_1.to_vasp('grown_1')
-    struct_1.to_vasp('grown_2')
+    struct_2.to_vasp('grown_2')
     glued_struct = combine_structures(struct_1, struct_2)
+    glued_struct.to_vasp('grow_and_glue')
     glued_struct.to_xyz('grow_and_glue')
     return 0
 
@@ -100,7 +100,11 @@ def combine_structures(struct_1, struct_2):
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    gb_genie(struct, np.array([1., 1., .0]), np.array([1., 2., 0]), 0.15, np.array([0, 0, 0]))
+    gb_genie(struct, np.array([1., 0., .0]), np.array([1., 1., 0]), 0.0, np.array([0, 0, 0]))
+    # box = np.identity(3) * 30.0
+    # struct.grow_to_supercell(box, 10000)
+    # struct.to_vasp('grow_test')
+    # struct.to_xyz('grow_test')
     
 if __name__ == '__main__':
     main(sys.argv)

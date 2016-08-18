@@ -217,11 +217,11 @@ class Structure(object):
         if (according_to == 'C'):
             self.direct = copy.deepcopy(self.cartesian)
             self.direct['position'] = np.dot(self.cartesian['position'], 
-                                             np.transpose(self.inverse))
+                                             self.inverse)
         elif (according_to == 'D'):
             self.cartesian = copy.deepcopy(self.direct)
-            self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                                np.transpose(self.coordinates))
+            self.cartesian['position'] = np.dot(self.direct['position'],
+                                                self.coordinates)
         else:
             raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
@@ -244,7 +244,7 @@ class Structure(object):
             (void): Does not return.
         """
         # First calculate the inverse while strengthening the diagonal.
-        new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
+        new_coord_inv = np.linalg.inv(lattice_vecs)
         # supercell_pos and search_dirs are from original LabView code.
         supercell_pos = map(np.array, [
             [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 
@@ -264,13 +264,12 @@ class Structure(object):
                 # If we have searched the position, just skip.
                 continue
             searched_pos.add(tuple(current_pos.tolist()))
-            shift_vector = np.dot(self.coordinates, current_pos)
+            shift_vector = np.dot(current_pos, self.coordinates)
             shifted = copy.deepcopy(self.cartesian)
             shifted['position'] += shift_vector
             # Convert the shifted vectors into direct with respect to the 
             # new coordinate system given by lattice_vec
-            shifted['position'] = np.dot(shifted['position'], 
-                                         np.transpose(new_coord_inv))
+            shifted['position'] = np.dot(shifted['position'], new_coord_inv)
             # Filter out the atoms that are contained by the new coordinate 
             # system.
             shifted = shifted[np.apply_along_axis(geom.valid_direct_vec, 
