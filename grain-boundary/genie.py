@@ -112,9 +112,32 @@ def apart_by_safe_distance(min_dist_dict, atom_1, atom_2):
         return np.linalg.norm(atom_1['position'] - 
                 atom_2['position']) >= min_dist
 
+def remove_collision_within_region(reg, min_dist_dict):
+    i = 0
+    while (i < len(reg) - 1):
+        prev = reg[0:i+1]
+        atm = reg[i]
+        test = reg[i+1:]
+        is_safe = np.array(map(lambda x : apart_by_safe_distance(
+            min_dist_dict, x, atm), test))
+        test = test[np.array(is_safe)]
+        reg = np.concatenate((prev, test))
+        i += 1
+    return reg
 
-def remove_collision(struct, boundary_radius, min_dist_dict):
+def remove_collision_between_regions(reg_1, reg_2, min_dist_dict):
+    for atm in reg_1:
+        if len(reg_2) <= 0:
+            break
+        is_safe = np.array(map(lambda x : apart_by_safe_distance(
+                               min_dist_dict, x, atm), reg_2))
+        reg_2 = reg_2[is_safe]
+    return reg_2
+
+def remove_collision(struct, boundary_radius, min_dist_dict, 
+                     random_delete=True):
     direct_length = abs(boundary_radius / np.linalg.norm(struct.coordinates[2]))
+    print(direct_length)
     # First remove collision around the interface.
     # Select interface atoms and delete from original atom arrays.
     orig_atom_count = struct.cartesian.shape[0]
@@ -124,19 +147,12 @@ def remove_collision(struct, boundary_radius, min_dist_dict):
         struct.direct['position'][:, 2] > (0.5 - direct_length))
     # Work in Cartesian system.
     iface_atoms = struct.cartesian[on_iface_idx]
+    if random_delete:
+        np.random.shuffle(iface_atoms)
     print(" Surface atom #: " + str(len(iface_atoms)))
     struct.cartesian = struct.cartesian[np.logical_not(on_iface_idx)]
     struct.direct = struct.direct[np.logical_not(on_iface_idx)]
-    i = 0
-    while (i < len(iface_atoms) - 1):
-        prev = iface_atoms[0:i+1]
-        atm = iface_atoms[i]
-        test = iface_atoms[i+1:]
-        is_safe = map(lambda x : apart_by_safe_distance(min_dist_dict, x, atm),
-                      test)
-        test = test[np.array(is_safe)]
-        iface_atoms = np.concatenate((prev, test))
-        i += 1
+    iface_atoms = remove_collision_within_region(iface_atoms, min_dist_dict)
 
     # Second remove collision by the boundary.
     on_btm_idx = np.logical_and(
@@ -146,17 +162,23 @@ def remove_collision(struct, boundary_radius, min_dist_dict):
         struct.direct['position'][:, 2] < (1.0 + direct_length),
         struct.direct['position'][:, 2] > (1.0 - direct_length))
     btm_atoms = struct.cartesian[on_btm_idx]
+    if random_delete:
+        np.random.shuffle(btm_atoms)
     top_atoms = struct.cartesian[on_top_idx]
+    if random_delete:
+        np.random.shuffle(top_atoms)
     print("Boundary atom #: " + str(len(btm_atoms) + len(top_atoms)))
     struct.cartesian = struct.cartesian[np.logical_not(
         np.logical_or(on_btm_idx, on_top_idx))]
     btm_atoms['position'] += struct.coordinates[2]
-    for btm_atm in btm_atoms:
-        if len(top_atoms) <= 0:
-            break
-        is_safe = map(lambda x : apart_by_safe_distance(
-            min_dist_dict, x, btm_atm), test)
-        top_atoms = top_atoms[np.array(is_safe)]
+
+    # Remove atoms that are too close to each other within bottom or top slice.
+    top_atoms = remove_collision_within_region(top_atoms, min_dist_dict)
+    btm_atoms = remove_collision_within_region(btm_atoms, min_dist_dict)
+
+    # Remove atom collisions 
+    btm_atoms = remove_collision_between_regions(top_atoms, btm_atoms, 
+                                                 min_dist_dict)
     btm_atoms['position'] -= struct.coordinates[2]
 
     struct.cartesian = np.concatenate((struct.cartesian, iface_atoms))
@@ -178,7 +200,7 @@ def main(argv):
         ('Cd', 'Cd') : 2.6, 
         ('Te', 'Te') : 3.3
     }
-    remove_collision(struct, 2.0, min_dist_dict)
+    remove_collision(struct, 2.0, min_dist_dict, random_delete=False)
     struct.to_xyz('col_rem_test')
     struct.to_vasp('col_rem_test')
 
