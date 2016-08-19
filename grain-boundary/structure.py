@@ -105,9 +105,10 @@ class Structure(object):
                     raise ValueError(
                         'Element list and count lengths mismatch.')
 
-            elements = [[name for _ in range(count)] for (name, count) in
-                        zip(element_list, element_count)]
-            elements = np.array(elements).flatten()
+            elements = []
+            for (name, count) in zip(element_list, element_count):
+                elements += [name for _ in range(count)]
+            elements = np.array(elements)
 
             next_line = in_file.readline().split()
             if (next_line[0] == 'Selective'):
@@ -215,10 +216,12 @@ class Structure(object):
             ValueError: Description
         """
         if (according_to == 'C'):
+            self.cartesian.sort(order='element')
             self.direct = copy.deepcopy(self.cartesian)
             self.direct['position'] = np.dot(self.cartesian['position'], 
-                                             self.inverse)
+                                             np.transpose(self.inverse))
         elif (according_to == 'D'):
+            self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)
             self.cartesian['position'] = np.dot(self.direct['position'],
                                                 self.coordinates)
@@ -244,7 +247,7 @@ class Structure(object):
             (void): Does not return.
         """
         # First calculate the inverse while strengthening the diagonal.
-        new_coord_inv = np.linalg.inv(lattice_vecs)
+        new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
         # supercell_pos and search_dirs are from original LabView code.
         supercell_pos = map(np.array, [
             [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 

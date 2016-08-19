@@ -15,10 +15,10 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     print(trans_2)
     box_1 = np.transpose(np.dot(trans_1, np.transpose(struct.coordinates)))
     box_2 = np.transpose(np.dot(trans_2, np.transpose(struct.coordinates)))
-    search_size = 25
+    search_size = 15
     coindicent_pts = find_coincident_points(box_1, box_2, search_size, 0.5)
     print(str(len(coindicent_pts)) + ' / ' + str(search_size**3 - 1))
-    lattice = find_overlattice(coindicent_pts, PI / 5, PI / 2)
+    lattice = find_overlattice(coindicent_pts, PI / 6, PI / 2)
     print(lattice)
     print('Expected atoms: ' + str(2 * len(struct.direct) / np.linalg.det(struct.coordinates) * np.linalg.det(lattice)))
     struct_1 = struct
@@ -62,7 +62,6 @@ def cartesian_product(array, level):
 def find_overlattice(coincident_pts, min_agl, max_agl, linear_eps=1e-5):
     res = [] # Resulting lattice vectors: list of 3*3 nparrays.
     vol = [] # Volume of boxes: list of floats.
-    # CAN BE VECTORIZED.
     for i in range(len(coincident_pts)):
         for j in range(i + 1, len(coincident_pts)):
             for k in range(j + 1, len(coincident_pts)):
@@ -98,13 +97,90 @@ def combine_structures(struct_1, struct_2):
     struct_1.reconcile(according_to='D')
     return struct_1
 
+def apart_by_safe_distance(min_dist_dict, atom_1, atom_2):
+    try:
+        min_dist = min_dist_dict[(atom_1['element'], atom_2['element'])]
+    except KeyError, e:
+        try:
+            min_dist = min_dist_dict[(atom_2['element'], atom_1['element'])]
+        except KeyError, e:
+            return True
+        else:
+            return np.linalg.norm(atom_1['position'] - 
+                atom_2['position']) >= min_dist
+    else:
+        return np.linalg.norm(atom_1['position'] - 
+                atom_2['position']) >= min_dist
+
+
+def remove_collision(struct, boundary_radius, min_dist_dict):
+    direct_length = abs(boundary_radius / np.linalg.norm(struct.coordinates[2]))
+    # First remove collision around the interface.
+    # Select interface atoms and delete from original atom arrays.
+    orig_atom_count = struct.cartesian.shape[0]
+    print("Original atom #: " + str(orig_atom_count))
+    on_iface_idx = np.logical_and(
+        struct.direct['position'][:, 2] < (0.5 + direct_length),
+        struct.direct['position'][:, 2] > (0.5 - direct_length))
+    # Work in Cartesian system.
+    iface_atoms = struct.cartesian[on_iface_idx]
+    print(" Surface atom #: " + str(len(iface_atoms)))
+    struct.cartesian = struct.cartesian[np.logical_not(on_iface_idx)]
+    struct.direct = struct.direct[np.logical_not(on_iface_idx)]
+    i = 0
+    while (i < len(iface_atoms) - 1):
+        prev = iface_atoms[0:i+1]
+        atm = iface_atoms[i]
+        test = iface_atoms[i+1:]
+        is_safe = map(lambda x : apart_by_safe_distance(min_dist_dict, x, atm),
+                      test)
+        test = test[np.array(is_safe)]
+        iface_atoms = np.concatenate((prev, test))
+        i += 1
+
+    # Second remove collision by the boundary.
+    on_btm_idx = np.logical_and(
+        struct.direct['position'][:, 2] < (0.0 + direct_length),
+        struct.direct['position'][:, 2] > (0.0 - direct_length))
+    on_top_idx = np.logical_and(
+        struct.direct['position'][:, 2] < (1.0 + direct_length),
+        struct.direct['position'][:, 2] > (1.0 - direct_length))
+    btm_atoms = struct.cartesian[on_btm_idx]
+    top_atoms = struct.cartesian[on_top_idx]
+    print("Boundary atom #: " + str(len(btm_atoms) + len(top_atoms)))
+    struct.cartesian = struct.cartesian[np.logical_not(
+        np.logical_or(on_btm_idx, on_top_idx))]
+    btm_atoms['position'] += struct.coordinates[2]
+    for btm_atm in btm_atoms:
+        if len(top_atoms) <= 0:
+            break
+        is_safe = map(lambda x : apart_by_safe_distance(
+            min_dist_dict, x, btm_atm), test)
+        top_atoms = top_atoms[np.array(is_safe)]
+    btm_atoms['position'] -= struct.coordinates[2]
+
+    struct.cartesian = np.concatenate((struct.cartesian, iface_atoms))
+    struct.cartesian = np.concatenate((struct.cartesian, btm_atoms))
+    struct.cartesian = np.concatenate((struct.cartesian, top_atoms))
+
+    struct.reconcile(according_to='C')
+    final_atom_count = struct.cartesian.shape[0]
+    print("  Atoms removed: " + str(orig_atom_count - final_atom_count))
+
+    return
+
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    gb_genie(struct, np.array([1., 0., .0]), np.array([1., 1., 0]), 0.0, np.array([0, 0, 0]))
-    # box = np.identity(3) * 30.0
-    # struct.grow_to_supercell(box, 10000)
-    # struct.to_vasp('grow_test')
-    # struct.to_xyz('grow_test')
-    
+    # gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
+
+    min_dist_dict = {
+        ('Cd', 'Te') : 2.3, 
+        ('Cd', 'Cd') : 2.6, 
+        ('Te', 'Te') : 3.3
+    }
+    remove_collision(struct, 2.0, min_dist_dict)
+    struct.to_xyz('col_rem_test')
+    struct.to_vasp('col_rem_test')
+
 if __name__ == '__main__':
     main(sys.argv)
