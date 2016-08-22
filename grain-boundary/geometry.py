@@ -186,9 +186,6 @@ def normalize_vector(vec):
 def valid_direct_vec(vec, epsilon=1e-5):
     return np.all(np.absolute(vec - 0.5) < 0.5 + epsilon)
 
-def rebase_coord_sys(coordinates):
-    return map(lambda x : x - np.amin(x), coordinates)
-
 def main():
     # orien_1 = np.array([0, 1, -1]).astype(float)
     # orien_2 = np.array([0, 2, 1]).astype(float)

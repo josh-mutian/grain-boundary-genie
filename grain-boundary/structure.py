@@ -219,7 +219,7 @@ class Structure(object):
             self.cartesian.sort(order='element')
             self.direct = copy.deepcopy(self.cartesian)
             self.direct['position'] = np.dot(self.cartesian['position'], 
-                                             np.transpose(self.inverse))
+                                             self.inverse)
         elif (according_to == 'D'):
             self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)

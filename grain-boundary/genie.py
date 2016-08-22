@@ -37,19 +37,13 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     return 0
 
 def find_coincident_points(box_1, box_2, max_int, tol):
-    # CAN BE VECTORIZED.
-    res = []
-    for i in range(max_int):
-        for j in range(max_int):
-            for k in range(max_int):
-                vec = np.dot(np.array([i, j, k]), box_1)
-                nearest_int_mult = np.rint(np.dot(vec, np.linalg.inv(box_2)))
-                dist = np.linalg.norm(np.dot(nearest_int_mult, box_2) - vec)
-                if dist <= tol:
-                    res.append(vec)
-    res = np.array(res)
-    res = res[np.argsort(np.apply_along_axis(np.linalg.norm, 1, res))]
-    return res[1:] # Remove the [0, 0, 0] point.
+    search_points = cartesian_product(np.arange(max_int), 3)
+    vecs = np.dot(search_points, box_1)
+    nearest_int_mult = np.rint(np.dot(vecs, np.linalg.inv(box_2)))
+    dist = np.apply_along_axis(np.linalg.norm, 1, (np.dot(nearest_int_mult, box_2) - vecs))
+    vecs = vecs[np.where(dist <= tol)]
+    vecs = vecs[np.argsort(np.apply_along_axis(np.linalg.norm, 1, vecs))]
+    return vecs[1:]
 
 def cartesian_product(array, level):
     res = []
@@ -193,16 +187,16 @@ def remove_collision(struct, boundary_radius, min_dist_dict,
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    # gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
+    gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
 
-    min_dist_dict = {
-        ('Cd', 'Te') : 2.3, 
-        ('Cd', 'Cd') : 2.6, 
-        ('Te', 'Te') : 3.3
-    }
-    remove_collision(struct, 2.0, min_dist_dict, random_delete=False)
-    struct.to_xyz('col_rem_test')
-    struct.to_vasp('col_rem_test')
+    # min_dist_dict = {
+    #     ('Cd', 'Te') : 2.3, 
+    #     ('Cd', 'Cd') : 2.6, 
+    #     ('Te', 'Te') : 3.3
+    # }
+    # remove_collision(struct, 2.0, min_dist_dict, random_delete=False)
+    # struct.to_xyz('col_rem_test')
+    # struct.to_vasp('col_rem_test')
 
 if __name__ == '__main__':
     main(sys.argv)
