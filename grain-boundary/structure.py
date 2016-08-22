@@ -81,6 +81,23 @@ class Structure(object):
         return res
 
     @staticmethod
+    def from_file(path, type):
+        if type == 'vasp':
+            return Structure.from_vasp(path)
+        else:
+            raise ValueError('Parser for file type %s not found.' % type)
+
+    def to_file(self, type, **kwargs):
+        if type == 'vasp':
+            return self.to_vasp(path)
+        elif type == 'xyz':
+            return self.to_xyz(path)
+        elif type == 'ems':
+            return self.to_ems(path, kwargs)
+        else:
+            raise ValueError('Exporter for file type %s not found.' % type)
+
+    @staticmethod
     def from_vasp(path):
         with util.open_read_file(path, 'vasp') as in_file:
             comment = in_file.readline().split()[0]
@@ -122,6 +139,7 @@ class Structure(object):
                              dtype=[('position', '>f4', 3), ('element', '|S5')])
 
         return Structure(comment, scaling, coordinates, atoms)
+
 
     def to_vasp(self, path):
         out_name = path if path.split('.')[-1] == 'vasp' else path + '.vasp'
@@ -168,7 +186,7 @@ class Structure(object):
             out_file.write(util.tabulate(rows))
         return
 
-    def to_ems(self, path, occ, wobble):
+    def to_ems(self, path, **kwargs):
         """Outputs a Structure object as .ems file.
 
         Args:
@@ -179,6 +197,14 @@ class Structure(object):
         Returns:
             (void): Does not return.
         """
+        keywords = ['occ', 'wobble']
+        if not all(map(lambda x : x in kwargs.keys(), keywords)):
+            raise ValueError(("A keyword argument containing all of %s "
+                "must be passed to the exporter to_ems().") % 
+                ', '.join(keywords))
+        occ = kwargs['occ']
+        wobble = kwargs['wobble']
+
         unit_lengths = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
                                            0, self.cartesian['position'])
         rows = []
