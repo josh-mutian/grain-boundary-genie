@@ -41,7 +41,6 @@ class Structure(object):
         epsilon = 5.0 * (10 ** -4)
         if (abs(np.linalg.det(self.coordinates) - 0.0) <= epsilon):
             raise ValueError('Coordinate lattice not valid: singular matrix.')
-        self.inverse = np.linalg.inv(self.coordinates)
         self.direct = atoms
         self.cartesian = copy.deepcopy(self.direct)
         self.cartesian['position'] = np.dot(self.cartesian['position'],
@@ -219,7 +218,7 @@ class Structure(object):
             self.cartesian.sort(order='element')
             self.direct = copy.deepcopy(self.cartesian)
             self.direct['position'] = np.dot(self.cartesian['position'], 
-                                             self.inverse)
+                np.transpose(np.linalg.inv(self.coordinates)))
         elif (according_to == 'D'):
             self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)
