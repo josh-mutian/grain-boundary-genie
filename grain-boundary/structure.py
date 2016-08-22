@@ -81,21 +81,27 @@ class Structure(object):
         return res
 
     @staticmethod
-    def from_file(path, type):
-        if type == 'vasp':
+    def from_file(path):
+        path_split = path.split('.')
+        if len(path_split) <= 0:
+            typ = ''
+        else:
+            typ = path_split[-1]
+            
+        if typ == 'vasp':
             return Structure.from_vasp(path)
         else:
-            raise ValueError('Parser for file type %s not found.' % type)
+            raise ValueError('Parser for file type %s not found.' % typ)
 
-    def to_file(self, type, **kwargs):
-        if type == 'vasp':
+    def to_file(self, typ, **kwargs):
+        if typ == 'vasp':
             return self.to_vasp(path)
-        elif type == 'xyz':
+        elif typ == 'xyz':
             return self.to_xyz(path)
-        elif type == 'ems':
+        elif typ == 'ems':
             return self.to_ems(path, kwargs)
         else:
-            raise ValueError('Exporter for file type %s not found.' % type)
+            raise ValueError('Exporter for file type %s not found.' % typ)
 
     @staticmethod
     def from_vasp(path):
