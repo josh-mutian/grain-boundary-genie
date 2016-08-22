@@ -5,13 +5,12 @@ import copy
 import numpy as np
 import utilities as util
 import geometry as geom
-from lattice import Lattice
 from constants import PERIODIC_TABLE
 
 
 class Structure(object):
     """A class representing a crystal structure.
-
+    
     Attributes:
         cartesian (bool): A record nparray, representing the atoms in the 
             Cartesian coordinates.

@@ -36,6 +36,14 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     glued_struct.to_xyz('grow_and_glue')
     return 0
 
+def cartesian_product(array, level):
+    res = []
+    for i in range(level):
+        res.append(np.tile(np.repeat(array, len(array) ** (level - i - 1)),
+                           len(array) ** i))
+    res = np.transpose(np.array(res))
+    return res
+
 def find_coincident_points(box_1, box_2, max_int, tol):
     search_points = cartesian_product(np.arange(max_int), 3)
     vecs = np.dot(search_points, box_1)
@@ -44,14 +52,6 @@ def find_coincident_points(box_1, box_2, max_int, tol):
     vecs = vecs[np.where(dist <= tol)]
     vecs = vecs[np.argsort(np.apply_along_axis(np.linalg.norm, 1, vecs))]
     return vecs[1:]
-
-def cartesian_product(array, level):
-    res = []
-    for i in range(level):
-        res.append(np.tile(np.repeat(array, len(array) ** (level - i - 1)),
-                           len(array) ** i))
-    res = np.transpose(np.array(res))
-    return res
 
 def find_overlattice(coincident_pts, min_agl, max_agl, linear_eps=1e-5):
     res = [] # Resulting lattice vectors: list of 3*3 nparrays.
@@ -187,16 +187,16 @@ def remove_collision(struct, boundary_radius, min_dist_dict,
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
+    # gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
 
-    # min_dist_dict = {
-    #     ('Cd', 'Te') : 2.3, 
-    #     ('Cd', 'Cd') : 2.6, 
-    #     ('Te', 'Te') : 3.3
-    # }
-    # remove_collision(struct, 2.0, min_dist_dict, random_delete=False)
-    # struct.to_xyz('col_rem_test')
-    # struct.to_vasp('col_rem_test')
+    min_dist_dict = {
+        ('Cd', 'Te') : 2.3, 
+        ('Cd', 'Cd') : 2.6, 
+        ('Te', 'Te') : 3.3
+    }
+    remove_collision(struct, 2.0, min_dist_dict, random_delete=False)
+    struct.to_xyz('col_rem_test')
+    struct.to_vasp('col_rem_test')
 
 if __name__ == '__main__':
     main(sys.argv)
