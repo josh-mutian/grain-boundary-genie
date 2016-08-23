@@ -4,6 +4,7 @@ from math import pi as PI
 import utilities as util
 import json
 
+
 class Configuration(object):
     """docstring for Config"""
     def __init__(self, struct_1, struct_2):
@@ -13,7 +14,7 @@ class Configuration(object):
         self.gb_settings = [] # List of GbSetting objects.
 
         # Coincident point search.
-        self.coincident_pts_tolerance = 4.0
+        self.coincident_pts_tolerance = 1.0
         self.coincident_pts_search_step = 25
 
         # Lattice vector generation.
@@ -24,14 +25,15 @@ class Configuration(object):
         # Collision removal.
         self.skip_collision_removal = False
         self.min_atom_dist = {}
-        self.boundary_radius = 2.0
+        self.boundary_radius = 0.025
         self.random_delete_atom = False
 
         # Output format.
         self.output_format = ''
+        self.output_kwarg = {}
         self.output_dir = ''
         self.output_name_prefix = ''
-        self.overwrite_protect = False
+        self.overwrite_protect = False # TODO: Get a different filename?
 
     @staticmethod
     def from_gbconf_file(path):
@@ -105,6 +107,7 @@ class Configuration(object):
         if 'output_format' in keys:
             config_object.output_format = \
                 parsed_json['output_format']
+        # TODO: Add the kwarg option.
         if 'output_dir' in keys:
             config_object.output_dir = \
                 parsed_json['output_dir']

@@ -1,0 +1,25 @@
+{
+    "struct_1": "CdTe_unit.vasp",
+    "struct_2": "CdTe_unit.vasp",
+    "gb_settings":
+    [
+        [[1, 1, 0], [1, 0, 0], 45],
+        [[1, 1, 1], [1, 1, -1], 180]
+    ],
+
+    "coincident_pts_tolerance": 0.5,
+    "coincident_pts_search_step": 15,
+
+    "lattice_vec_agl_range": [0, 90],
+    "atom_counts_range": [0, 20000], 
+
+    "min_atom_dist": 
+    [
+        ["Cd", "Te", 2.3],
+        ["Cd", "Cd", 2.6], 
+        ["Te", "Te", 3.3]
+    ],
+    "random_delete_atom": true,
+
+    "output_dir": "cdte_test"
+}

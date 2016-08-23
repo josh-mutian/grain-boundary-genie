@@ -87,7 +87,7 @@ class Structure(object):
             typ = ''
         else:
             typ = path_split[-1]
-            
+
         if typ == 'vasp':
             return Structure.from_vasp(path)
         else:
