@@ -253,8 +253,8 @@ class Structure(object):
         elif (according_to == 'D'):
             self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)
-            self.cartesian['position'] = np.dot(self.direct['position'],
-                                                self.coordinates)
+            self.cartesian['position'] = np.dot(self.cartesian['position'],
+                                            np.transpose(self.coordinates))
         else:
             raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
