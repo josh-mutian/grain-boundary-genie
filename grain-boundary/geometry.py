@@ -67,8 +67,8 @@ def rotation_angle_matrix(axis, agl):
 
 
 def angle_between_vectors(vec_1, vec_2):
-    return np.arccos(np.dot(vec_1, vec_2) / (np.linalg.norm(vec_1) *
-                                             np.linalg.norm(vec_2)))
+    return np.arccos(np.dot(vec_1, vec_2) / 
+        (np.linalg.norm(vec_1) * np.linalg.norm(vec_2)))
 
 
 def mutual_view_angle(orien_1, orien_2, view_agls, tol):
@@ -116,6 +116,14 @@ def normalize_vector(vec):
 
 def valid_direct_vec(vec, epsilon=1e-5):
     return np.all(np.absolute(vec - 0.5) < 0.5 + epsilon)
+
+def cartesian_product(array, level):
+    res = []
+    for i in range(level):
+        res.append(np.tile(np.repeat(array, len(array) ** (level - i - 1)),
+                           len(array) ** i))
+    res = np.transpose(np.array(res))
+    return res
 
 def main():
     # orien_1 = np.array([0, 1, -1]).astype(float)
