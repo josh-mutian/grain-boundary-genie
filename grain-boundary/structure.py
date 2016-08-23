@@ -43,7 +43,7 @@ class Structure(object):
         self.direct = atoms
         self.cartesian = copy.deepcopy(self.direct)
         self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                            np.transpose(self.coordinates))
+                                            self.coordinates)
         self.elements = set(np.unique(atoms['element']))
 
     def __str__(self):
@@ -181,6 +181,7 @@ class Structure(object):
         return
 
     def to_xyz(self, path):
+        self.reconcile(according_to='D')
         out_name = path if path.split('.')[-1] == 'xyz' else path + '.xyz'
         with util.open_write_file(out_name) as out_file:
             out_file.write(str(self.cartesian.shape[0]) + '\n')
@@ -249,12 +250,12 @@ class Structure(object):
             self.cartesian.sort(order='element')
             self.direct = copy.deepcopy(self.cartesian)
             self.direct['position'] = np.dot(self.cartesian['position'], 
-                np.transpose(np.linalg.inv(self.coordinates)))
+                np.linalg.inv(self.coordinates))
         elif (according_to == 'D'):
             self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)
             self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                            np.transpose(self.coordinates))
+                                            self.coordinates)
         else:
             raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
@@ -297,7 +298,7 @@ class Structure(object):
                 # If we have searched the position, just skip.
                 continue
             searched_pos.add(tuple(current_pos.tolist()))
-            shift_vector = np.dot(self.coordinates, current_pos)
+            shift_vector = np.dot(current_pos, self.coordinates)
             shifted = copy.deepcopy(self.cartesian)
             shifted['position'] += shift_vector
             # Convert the shifted vectors into direct with respect to the 
@@ -322,6 +323,19 @@ class Structure(object):
         # Make the Cartesian coordinates consistent.
         self.reconcile(according_to='D')
         return
+
+    @staticmethod
+    def combine_structures(struct_1, struct_2):
+        # Assuming that these structures have same lattice vector sets. We extend
+        # the c direction by 2 and shift struct_2 to that place. 
+        struct_1.direct['position'][:, 2] /= 2.0
+        struct_2.direct['position'][:, 2] /= 2.0
+        struct_2.direct['position'][:, 2] += 0.5
+        struct_1.direct = np.concatenate((struct_1.direct, struct_2.direct))
+        struct_1.coordinates[2] *= 2.0
+        struct_1.comment = struct_1.comment + '_' + struct_2.comment
+        struct_1.reconcile(according_to='D')
+        return struct_1
 
 
 def main(argv):
