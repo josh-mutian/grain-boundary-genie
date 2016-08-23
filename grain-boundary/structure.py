@@ -297,7 +297,7 @@ class Structure(object):
                 # If we have searched the position, just skip.
                 continue
             searched_pos.add(tuple(current_pos.tolist()))
-            shift_vector = np.dot(current_pos, self.coordinates)
+            shift_vector = np.dot(self.coordinates, current_pos)
             shifted = copy.deepcopy(self.cartesian)
             shifted['position'] += shift_vector
             # Convert the shifted vectors into direct with respect to the 
