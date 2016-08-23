@@ -19,11 +19,11 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     search_size = 20
     coincident_pts = find_coincident_points(box_1, box_2, search_size, 0.5)
     print(str(len(coincident_pts)) + ' / ' + str(search_size**3 - 1))
-    min_atom = 700
-    max_atom = 10000
+    min_atom = 500
+    max_atom = 100000
     min_vol = 0.5 * min_atom / (len(struct.direct) / np.linalg.det(struct.coordinates))
     max_vol = 0.5 * max_atom / (len(struct.direct) / np.linalg.det(struct.coordinates))
-    lattice = find_overlattice(coincident_pts, PI / 4, PI / 2, min_vol, max_vol)
+    lattice = find_overlattice(coincident_pts, PI / 4, PI / 2, min_vol, max_vol, min_vec_len=7.0)
     print(lattice)
     lattice = lattice[0]
     print('Expected atoms: ' + str(2 * len(struct.direct) / np.linalg.det(struct.coordinates) * np.linalg.det(lattice)))
@@ -31,8 +31,6 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     struct_2 = copy.deepcopy(struct)
     struct_1.transform(trans_1)
     struct_2.transform(trans_2)
-    print("Trans 1 det:" + str(np.linalg.det(trans_1)))
-    print("Trans 2 det:" + str(np.linalg.det(trans_2)))
     struct_1.grow_to_supercell(lattice, 10000)
     struct_2.grow_to_supercell(lattice, 10000)
     struct_1.to_vasp('grown_1')
@@ -46,7 +44,7 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
         ('Cd', 'Cd') : 3.5, 
         ('Te', 'Te') : 3.3
     }
-    coll_rm.remove_collision(glued_struct, 0.01, min_dist_dict, random_delete=False)
+    coll_rm.remove_collision(glued_struct, 0.02, min_dist_dict, random_delete=False)
     glued_struct.to_xyz('col_rem_test')
     glued_struct.to_vasp('col_rem_test')
 
@@ -62,7 +60,7 @@ def find_coincident_points(box_1, box_2, max_int, tol):
     return vecs[1:]
 
 def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol, 
-                     max_pts=100, linear_eps=1e-5):
+                     max_pts=100, min_vec_len=0., linear_eps=1e-5):
     print(min_vol)
     print(max_vol)
     if len(coincident_pts) < 3:
@@ -80,6 +78,10 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
                 det = np.linalg.det(lat_vecs)
                 if det < linear_eps:
                     continue
+                vec_lens = np.apply_along_axis(np.linalg.norm, 1, lat_vecs)
+                # print(vec_lens)
+                if not np.all(vec_lens > min_vec_len):
+                    continue
                 vec_agls = np.array([
                     geom.angle_between_vectors(lat_vecs[0], lat_vecs[1]),
                     geom.angle_between_vectors(lat_vecs[1], lat_vecs[2]), 
@@ -91,12 +93,11 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
     res = np.array(res)
     vol = np.array(vol)
     good_vol_idx = np.logical_and(vol < max_vol, vol > min_vol)
-    # res = res[good_vol_idx]
-    # vol = vol[good_vol_idx]
+    res = res[good_vol_idx]
+    vol = vol[good_vol_idx]
 
     print('%d good lattice vector sets found.' % len(res))
-    vec_len_sum = np.array(map(lambda x : np.sum(x ** 2), res))
-    res = res[np.argsort(vec_len_sum)]
+    res = res[np.argsort(vol)]
     return res
 
 def combine_structures(struct_1, struct_2):
