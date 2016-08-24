@@ -123,8 +123,9 @@ def remove_collision_at_corners(struct, boundary_radius, min_dist_dict,
 
         struct.reconcile(according_to='C')
 
-    struct.cartesian = np.concatenate((struct.cartesian, 
-                                       np.array(corner_atoms)))
+    if len(corner_atoms) > 0:
+        struct.cartesian = np.concatenate((struct.cartesian, 
+                                           np.array(corner_atoms)))
     struct.reconcile(according_to='C')
 
     final_atom_count = len(struct.cartesian)
