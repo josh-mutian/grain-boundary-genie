@@ -6,6 +6,7 @@ import numpy as np
 import utilities as util
 import geometry as geom
 from constants import PERIODIC_TABLE
+from math import pi as PI
 
 
 class Structure(object):
@@ -90,6 +91,23 @@ class Structure(object):
         view_agls = ctr_atoms[1:view_agl_count+1]['position'] - ctr_atoms[0]['position']
         view_agls = np.apply_along_axis(geom.normalize_vector, 1, view_agls)
         return view_agls
+
+    @staticmethod
+    def find_mutual_viewing_angle(struct_1, struct_2, tol):
+        # If either structure does not have view angle, return the default
+        # value of [1, 0, 0].
+        if len(struct_1.view_agls) <= 0 or len(struct_2.view_agls) <= 0:
+            return np.array([1., 0., 0.])
+
+        for agl_1 in struct_1.view_agls:
+            for agl_2 in struct_2.view_agls:
+                agl_in_between = geom.angle_between_vectors(agl_1, agl_2)
+                # If an angle is within the tolerance, return it.
+                if agl_in_between < tol or agl_in_between > (PI - tol):
+                    return agl_1
+
+        # If no such angle exists, return the first view angle of struct_1.
+        return struct_1.view_agls[0]
 
     @staticmethod
     def from_file(path, **kwargs):
@@ -334,6 +352,8 @@ class Structure(object):
                 supercell_pos += next_pos
         # Replace the coordinate system and atom positions.
         self.direct = np.unique(enlarged_struct)
+        if len(self.direct) <= 0:
+            raise ValueError('Grown super-cell is empty')
         self.direct.sort(order='element')
         self.coordinates = lattice_vecs
         # Make the Cartesian coordinates consistent.
@@ -359,9 +379,11 @@ def main(argv):
     # new_coord = np.identity(3) * 30.0
     # struct.grow_to_supercell(new_coord, 10000)
     # struct.to_xyz('grown')
-    print(struct.view_agls)
-    struct.transform(geom.get_rotation_matrix(struct.view_agls[3], np.array([1., 0., 0.])))
-    struct.to_file('view_agl_test', 'xyz')
+    box = np.array([[ -3.20877273e+01, 7.55710479e-15, 3.20877273e+01],
+                    [  3.20877273e+0, -5.18615990e+01, 3.20877273e+01],
+                    [  3.20877273e+0, -6.48269987e+00, 7.79273377e+01]])
+    struct.grow_to_supercell(box, 5000)
+    struct.to_file('grow_test', 'vasp')
 
 
 if __name__ == '__main__':
