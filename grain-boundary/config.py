@@ -1,5 +1,4 @@
 import numpy as np
-from structure import Structure
 from math import pi as PI
 import utilities as util
 import json
@@ -38,6 +37,9 @@ class Configuration(object):
         self.output_name_prefix = ''
         self.overwrite_protect = True
 
+    def __str__(self):
+        return str(self.__dict__);
+
     @staticmethod
     def from_gbconf_file(path):
         # First take in the gbconf file and parse JSON.
@@ -51,11 +53,11 @@ class Configuration(object):
         if not 'struct_1' in keys:
             raise ValueError('Keyword \'struct_1\' must present'
                              ' in the JSON input file.')
-        struct_1 = Structure.from_file(parsed_json['struct_1'])
+        struct_1 = parsed_json['struct_1']
         if not 'struct_2' in keys:
             raise ValueError('Keyword \'struct_2\' must present'
                              ' in the JSON input file.')
-        struct_2 = Structure.from_file(parsed_json['struct_2'])
+        struct_2 = parsed_json['struct_2']
 
         config_object = Configuration(struct_1, struct_2)
 
@@ -65,7 +67,7 @@ class Configuration(object):
         config_object.gb_settings = map(
             lambda x : [np.array(x[0]).astype(float), 
                         np.array(x[1]).astype(float),
-                        float(x[2])], 
+                        np.deg2rad(float(x[2]))], 
             parsed_json['gb_settings'])
 
         # Optional value viewing angle number.
@@ -129,7 +131,7 @@ class Configuration(object):
 
 
 def main():
-    Configuration.from_gbconf_file('test.gbconf')
+    print(Configuration.from_gbconf_file('test.gbconf'))
 
 if __name__ == '__main__':
     main()

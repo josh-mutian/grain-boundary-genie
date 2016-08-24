@@ -104,7 +104,7 @@ class Structure(object):
         else:
             raise ValueError('Parser for file type %s not found.' % typ)
 
-    def to_file(self, path, typ, **kwargs, overwrite_protect=True):
+    def to_file(self, path, typ, overwrite_protect=True, **kwargs):
         if typ == 'vasp':
             return self.to_vasp(path, overwrite_protect)
         elif typ == 'xyz':
@@ -195,7 +195,7 @@ class Structure(object):
 
         return
 
-    def to_xyz(self, pathm overwrite_protect):
+    def to_xyz(self, path, overwrite_protect):
         self.reconcile(according_to='D')
         out_name = path if path.split('.')[-1] == 'xyz' else path + '.xyz'
         with util.open_write_file(out_name, overwrite_protect) as out_file:
