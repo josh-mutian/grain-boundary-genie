@@ -58,10 +58,17 @@ def open_read_file(path, extension):
 
 
 def open_write_file(path, overwrite_protect=True):
-    if False: #(os.path.isfile(path) and overwrite_protect):
-        print('File %s exists.' % path)
-        decision = raw_input('Type "Y" if you want to overwrite or' +
-                             ' any other character(s) to quit.\n')
-        if (decision != 'Y'):
-            sys.exit('You have aborted the task.')
-    return open(path, 'w')
+    if os.path.isfile(path) and overwrite_protect:
+        path_split = path.split('.')
+        if len(path_split) > 1:
+            extension = '.' + path_split[-1]
+            path = '.'.join(path_split[0:-1])
+        else:
+            extension = ''
+        counter = 1
+        if (os.path.isfile(path + '_' + str(counter))):
+            counter += 1
+        path = path + '_' + str(counter)
+        return open(path + extension, 'w')
+    else:
+        return open(path, 'w')
