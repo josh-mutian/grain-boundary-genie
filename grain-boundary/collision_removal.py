@@ -24,16 +24,8 @@ def is_safe_distance(min_dist_dict, dist, ele_1, ele_2):
         except KeyError, e:
             return True
         else:
-            if (not dist >= min_dist):
-                print(ele_1 + ' ' + ele_2)
-                print(min_dist)
-                print(dist)
             return dist >= min_dist
     else:
-        if (not dist >= min_dist):
-            print(ele_1 + ' ' + ele_2)
-            print(min_dist)
-            print(dist)
         return dist >= min_dist
 
 def remove_collision_within_region(reg, min_dist_dict):
@@ -115,7 +107,6 @@ def remove_collision_at_corners(struct, boundary_radius, min_dist_dict,
         struct.cartesian = struct.cartesian[np.logical_not(idx)]
         
         for atm in candidate_atoms:
-            print(atm)
             qualify = True
             for i in range(len(corner_atoms)):
                 if not qualify:
@@ -162,26 +153,10 @@ def remove_collision_on_interface(struct, boundary_radius, min_dist_dict,
           (orig_atom_count - final_atom_count))
     return orig_atom_count - final_atom_count
 
-def remove_collision(struct, boundary_radius, min_dist_dict, 
-                     random_delete=False):
-    orig_atom_count = struct.cartesian.shape[0]
-
-    remove_collision_on_interface(struct, boundary_radius, min_dist_dict, 
-                                  random_delete)
-    for dir_vec in np.identity(3):
-        remove_collision_surface_pair(struct, boundary_radius, min_dist_dict, 
-                                      dir_vec, random_delete)
-    remove_collision_at_corners(struct, boundary_radius, min_dist_dict)
-
-    # min_image_remove_collision(struct, min_dist_dict)
-
-    final_atom_count = struct.cartesian.shape[0]
-    print('%d atoms removed in total.' % (orig_atom_count - final_atom_count))
-    return orig_atom_count - final_atom_count
-
-def min_image_remove_collision(struct, min_dist_dict):
+def min_image_remove_collision(struct, min_dist_dict, random_delete=False):
     good_direct = []
-    np.random.shuffle(struct.cartesian)
+    if random_delete:
+        np.random.shuffle(struct.cartesian)
     for i in range(len(struct.cartesian)):
         qualified = True
         for j in range(len(good_direct)):
@@ -197,7 +172,24 @@ def min_image_remove_collision(struct, min_dist_dict):
             good_direct.append(struct.direct[i])
 
     good_direct = np.array(good_direct)
-    print(good_direct)
     struct.direct = good_direct[1:]
     struct.reconcile(according_to='D')
     return
+
+def remove_collision(struct, boundary_radius, min_dist_dict, fast=True, 
+                     random_delete=False):
+    orig_atom_count = struct.cartesian.shape[0]
+
+    if fast:
+        remove_collision_on_interface(struct, boundary_radius, min_dist_dict, 
+                                      random_delete)
+        for dir_vec in np.identity(3):
+            remove_collision_surface_pair(struct, boundary_radius, 
+                                          min_dist_dict, dir_vec, random_delete)
+        remove_collision_at_corners(struct, boundary_radius, min_dist_dict)
+    else:
+        min_image_remove_collision(struct, min_dist_dict)
+
+    final_atom_count = struct.cartesian.shape[0]
+    print('%d atoms removed in total.' % (orig_atom_count - final_atom_count))
+    return orig_atom_count - final_atom_count

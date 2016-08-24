@@ -5,7 +5,6 @@ from structure import Structure
 import geometry as geom
 import collision_removal as coll_rmvl
 import coincidence_search as coin_srch
-
 from math import pi as PI
 
 
@@ -62,7 +61,8 @@ def main(argv):
         ('Cd', 'Cd') : 3.0, 
         ('Te', 'Te') : 3.0
     }
-    coll_rmvl.remove_collision(struct, 0.01, min_dist_dict, random_delete=False)
+    coll_rmvl.remove_collision(struct, 0.01, min_dist_dict, fast=False,
+        random_delete=False)
     struct.to_vasp('col_rem_test_fst')
     struct.to_xyz('col_rem_test_fst')
     
