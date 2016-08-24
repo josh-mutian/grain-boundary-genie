@@ -12,6 +12,7 @@ class Configuration(object):
         self.struct_2 = struct_2 # Second structure path, required.
         self.gb_settings = []    # List of GbSetting parameters.
         self.view_agl_count = 10 # Optional value of view angle count.
+        self.mutual_view_agl_tolerance = 0.0873
 
         # Coincident point search.
         self.coincident_pts_tolerance = 1.0
@@ -31,7 +32,7 @@ class Configuration(object):
         self.random_delete_atom = False
 
         # Output format.
-        self.output_format = ''
+        self.output_format = 'vasp'
         self.output_options = {}
         self.output_dir = ''
         self.output_name_prefix = ''
@@ -73,6 +74,10 @@ class Configuration(object):
         # Optional value viewing angle number.
         if 'view_agl_count' in keys:
             config_object.view_agl_count = float(parsed_json['view_agl_count'])
+
+        if 'mutual_view_agl_tolerance' in keys:
+            config_object.mutual_view_agl_tolerance = \
+                float(parsed_json['mutual_view_agl_tolerance'])
 
         # Coincident point search parameters.
         if 'coincident_pts_tolerance' in keys:
