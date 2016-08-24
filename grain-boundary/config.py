@@ -11,7 +11,7 @@ class Configuration(object):
         # Basic GB settings.
         self.struct_1 = struct_1 # First structure path, required.
         self.struct_2 = struct_2 # Second structure path, required.
-        self.gb_settings = []    # List of GbSetting objects.
+        self.gb_settings = []    # List of GbSetting parameters.
         self.view_agl_count = 10 # Optional value of view angle count.
 
         # Coincident point search.
@@ -22,7 +22,7 @@ class Configuration(object):
         self.max_coincident_pts_searched = 100
         self.lattice_vec_agl_range = (0, PI)
         self.min_vec_length = 0.0
-        self.atom_counts_range = (1000, 10000)
+        self.atom_count_range = (1000, 10000)
 
         # Collision removal.
         self.skip_collision_removal = False
@@ -36,7 +36,7 @@ class Configuration(object):
         self.output_options = {}
         self.output_dir = ''
         self.output_name_prefix = ''
-        self.overwrite_protect = False # TODO: Get a different filename?
+        self.overwrite_protect = True
 
     @staticmethod
     def from_gbconf_file(path):
@@ -90,10 +90,10 @@ class Configuration(object):
                  float(parsed_json['lattice_vec_agl_range'][1]))
         if 'min_vec_length' in keys:
             config_object.min_vec_length = float(parsed_json['min_vec_length'])
-        if 'atom_counts_range' in keys:
-            config_object.atom_counts_range = \
-                (float(parsed_json['atom_counts_range'][0]),
-                 float(parsed_json['atom_counts_range'][1]))
+        if 'atom_count_range' in keys:
+            config_object.atom_count_range = \
+                (float(parsed_json['atom_count_range'][0]),
+                 float(parsed_json['atom_count_range'][1]))
 
         # Collision removal parameters.
         if 'skip_collision_removal' in keys:

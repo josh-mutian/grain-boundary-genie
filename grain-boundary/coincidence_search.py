@@ -12,8 +12,6 @@ def find_coincident_points(box_1, box_2, max_int, tol):
 
 def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol, 
                      max_pts=100, min_vec_len=0., linear_eps=1e-5):
-    print(min_vol)
-    print(max_vol)
     if len(coincident_pts) < 3:
         raise ValueError('Must have at least 3 coincident points')
     if len(coincident_pts) > max_pts:
@@ -48,4 +46,7 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
 
     print('%d good lattice vector sets found.' % len(res))
     res = res[np.argsort(vol)]
-    return res
+    if len(res) <= 0:
+        raise ValueError('No lattice vector sets meeting all requirements.')
+    else:
+        return res

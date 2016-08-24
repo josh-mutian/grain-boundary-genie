@@ -66,9 +66,17 @@ def open_write_file(path, overwrite_protect=True):
         else:
             extension = ''
         counter = 1
-        if (os.path.isfile(path + '_' + str(counter))):
+        while os.path.isfile(path + '_' + str(counter) + extension):
             counter += 1
         path = path + '_' + str(counter)
         return open(path + extension, 'w')
     else:
         return open(path, 'w')
+
+def main():
+    open_write_file('test_write')
+    open_write_file('test_write')
+    open_write_file('test_write')
+
+if __name__ == '__main__':
+    main()
