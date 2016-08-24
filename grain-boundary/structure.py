@@ -104,13 +104,13 @@ class Structure(object):
         else:
             raise ValueError('Parser for file type %s not found.' % typ)
 
-    def to_file(self, path, typ, **kwargs):
+    def to_file(self, path, typ, **kwargs, overwrite_protect=True):
         if typ == 'vasp':
-            return self.to_vasp(path)
+            return self.to_vasp(path, overwrite_protect)
         elif typ == 'xyz':
-            return self.to_xyz(path)
+            return self.to_xyz(path, overwrite_protect)
         elif typ == 'ems':
-            return self.to_ems(path, **kwargs)
+            return self.to_ems(path, overwrite_protect, **kwargs)
         else:
             raise ValueError('Exporter for file type %s not found.' % typ)
 
@@ -162,9 +162,9 @@ class Structure(object):
                          view_agl_count=view_agl_count)
 
 
-    def to_vasp(self, path):
+    def to_vasp(self, path, overwrite_protect):
         out_name = path if path.split('.')[-1] == 'vasp' else path + '.vasp'
-        with util.open_write_file(out_name) as out_file:
+        with util.open_write_file(out_name, overwrite_protect) as out_file:
             out_file.write(self.comment + '\n1.0\n')
             for vector in self.coordinates:
                 out_file.write(' '.join(map(str, vector.tolist())) + '\n')
@@ -195,10 +195,10 @@ class Structure(object):
 
         return
 
-    def to_xyz(self, path):
+    def to_xyz(self, pathm overwrite_protect):
         self.reconcile(according_to='D')
         out_name = path if path.split('.')[-1] == 'xyz' else path + '.xyz'
-        with util.open_write_file(out_name) as out_file:
+        with util.open_write_file(out_name, overwrite_protect) as out_file:
             out_file.write(str(self.cartesian.shape[0]) + '\n')
             out_file.write(self.comment + '\n')
             rows = []
@@ -208,7 +208,7 @@ class Structure(object):
             out_file.write(util.tabulate(rows))
         return
 
-    def to_ems(self, path, **kwargs):
+    def to_ems(self, path, overwrite_protect, **kwargs):
         """Outputs a Structure object as .ems file.
 
         Args:
@@ -242,7 +242,7 @@ class Structure(object):
                          '%.4f' % (ent['position'][2] / unit_lengths[2]),
                          '%.1f' % occ, '%.3f' % wobble])
         out_name = path if path.split('.')[-1] == 'ems' else path + '.ems'
-        with open(out_name, 'w') as out_file:
+        with util.open_write_file(out_name, overwrite_protect) as out_file:
             out_file.write(self.comment + '\n')
             out_file.write(util.tabulate(rows))
             out_file.write('\n  -1')
@@ -355,12 +355,12 @@ class Structure(object):
 
 
 def main(argv):
-    struct = Structure.from_vasp(argv[1], view_agl_count=50)
+    struct = Structure.from_vasp(argv[1], view_agl_count=10)
     # new_coord = np.identity(3) * 30.0
     # struct.grow_to_supercell(new_coord, 10000)
     # struct.to_xyz('grown')
     print(struct.view_agls)
-    struct.transform(geom.get_rotation_matrix(struct.view_agls[24], np.array([1., 0., 0.])))
+    struct.transform(geom.get_rotation_matrix(struct.view_agls[3], np.array([1., 0., 0.])))
     struct.to_file('view_agl_test', 'xyz')
 
 
