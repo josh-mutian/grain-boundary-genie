@@ -8,10 +8,11 @@ import json
 class Configuration(object):
     """docstring for Config"""
     def __init__(self, struct_1, struct_2):
-        # Basic GB settings, required from user input.
-        self.struct_1 = struct_1
-        self.struct_2 = struct_2
-        self.gb_settings = [] # List of GbSetting objects.
+        # Basic GB settings.
+        self.struct_1 = struct_1 # First structure path, required.
+        self.struct_2 = struct_2 # Second structure path, required.
+        self.gb_settings = []    # List of GbSetting objects.
+        self.view_agl_count = 10 # Optional value of view angle count.
 
         # Coincident point search.
         self.coincident_pts_tolerance = 1.0
@@ -20,17 +21,19 @@ class Configuration(object):
         # Lattice vector generation.
         self.max_coincident_pts_searched = 100
         self.lattice_vec_agl_range = (0, PI)
-        self.atom_counts_range = (5000, 10000)
+        self.min_vec_length = 0.0
+        self.atom_counts_range = (1000, 10000)
 
         # Collision removal.
         self.skip_collision_removal = False
+        self.fast_removal = True
         self.min_atom_dist = {}
-        self.boundary_radius = 0.025
+        self.boundary_radius = 0.02
         self.random_delete_atom = False
 
         # Output format.
         self.output_format = ''
-        self.output_kwarg = {}
+        self.output_options = {}
         self.output_dir = ''
         self.output_name_prefix = ''
         self.overwrite_protect = False # TODO: Get a different filename?
@@ -65,6 +68,10 @@ class Configuration(object):
                         float(x[2])], 
             parsed_json['gb_settings'])
 
+        # Optional value viewing angle number.
+        if 'view_agl_count' in keys:
+            config_object.view_agl_count = float(parsed_json['view_agl_count'])
+
         # Coincident point search parameters.
         if 'coincident_pts_tolerance' in keys:
             config_object.coincident_pts_tolerance = \
@@ -81,6 +88,8 @@ class Configuration(object):
             config_object.lattice_vec_agl_range = \
                 (float(parsed_json['lattice_vec_agl_range'][0]),
                  float(parsed_json['lattice_vec_agl_range'][1]))
+        if 'min_vec_length' in keys:
+            config_object.min_vec_length = float(parsed_json['min_vec_length'])
         if 'atom_counts_range' in keys:
             config_object.atom_counts_range = \
                 (float(parsed_json['atom_counts_range'][0]),
@@ -90,6 +99,8 @@ class Configuration(object):
         if 'skip_collision_removal' in keys:
             config_object.skip_collision_removal = \
                 parsed_json['skip_collision_removal']
+        if 'fast_removal' in keys:
+            config_object.fast_removal = parsed_json['fast_removal']
         if 'min_atom_dist' in keys:
             for [atm_1, atm_2, dist] in parsed_json['min_atom_dist']:
                 config_object.min_atom_dist[(atm_1, atm_2)] = float(dist)
@@ -100,23 +111,19 @@ class Configuration(object):
             config_object.boundary_radius = \
                 float(parsed_json['boundary_radius'])
         if 'random_delete_atom' in keys:
-            config_object.random_delete_atom = \
-                parsed_json['random_delete_atom']
+            config_object.random_delete_atom = parsed_json['random_delete_atom']
 
         # Output format parameters.
         if 'output_format' in keys:
-            config_object.output_format = \
-                parsed_json['output_format']
-        # TODO: Add the kwarg option.
+            config_object.output_format = parsed_json['output_format']
+        if 'output_options' in keys:
+            config_object.output_options = parsed_json['output_options']
         if 'output_dir' in keys:
-            config_object.output_dir = \
-                parsed_json['output_dir']
+            config_object.output_dir = parsed_json['output_dir']
         if 'output_name_prefix' in keys:
-            config_object.output_name_prefix = \
-                parsed_json['output_name_prefix']
+            config_object.output_name_prefix = parsed_json['output_name_prefix']
         if 'overwrite_protect' in keys:
-            config_object.overwrite_protect = \
-                parsed_json['overwrite_protect']
+            config_object.overwrite_protect = parsed_json['overwrite_protect']
 
         return config_object
 
