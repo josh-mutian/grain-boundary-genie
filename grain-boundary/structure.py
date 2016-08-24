@@ -23,7 +23,7 @@ class Structure(object):
             structure.    
     """
 
-    def __init__(self, comment, scaling, coordinates, atoms):
+    def __init__(self, comment, scaling, coordinates, atoms, view_agl_count=10):
         """Initializes a new Structure object.
 
         Args:
@@ -45,6 +45,7 @@ class Structure(object):
         self.cartesian['position'] = np.dot(self.cartesian['position'],
                                             self.coordinates)
         self.elements = set(np.unique(atoms['element']))
+        self.view_agls = self.find_viewing_angle(view_agl_count)
 
     def __str__(self):
         """The to-string method.
@@ -80,8 +81,18 @@ class Structure(object):
         res += util.tabulate(rows)
         return res
 
+    def find_viewing_angle(self, view_agl_count):
+        dist_to_ctr = np.apply_along_axis(np.linalg.norm, 1, 
+            self.cartesian['position'] - np.dot(np.array([.5, .5, .5]), 
+            self.coordinates))
+        ctr_atoms = self.cartesian[np.argsort(dist_to_ctr)]
+        agl_count = min(len(self.cartesian) - 1, view_agl_count)
+        view_agls = ctr_atoms[1:view_agl_count+1]['position'] - ctr_atoms[0]['position']
+        view_agls = np.apply_along_axis(geom.normalize_vector, 1, view_agls)
+        return view_agls
+
     @staticmethod
-    def from_file(path):
+    def from_file(path, **kwargs):
         path_split = path.split('.')
         if len(path_split) <= 0:
             typ = ''
@@ -89,22 +100,25 @@ class Structure(object):
             typ = path_split[-1]
 
         if typ == 'vasp':
-            return Structure.from_vasp(path)
+            return Structure.from_vasp(path, **kwargs)
         else:
             raise ValueError('Parser for file type %s not found.' % typ)
 
-    def to_file(self, typ, **kwargs):
+    def to_file(self, path, typ, **kwargs):
         if typ == 'vasp':
             return self.to_vasp(path)
         elif typ == 'xyz':
             return self.to_xyz(path)
         elif typ == 'ems':
-            return self.to_ems(path, kwargs)
+            return self.to_ems(path, **kwargs)
         else:
             raise ValueError('Exporter for file type %s not found.' % typ)
 
     @staticmethod
-    def from_vasp(path):
+    def from_vasp(path, **kwargs):
+        view_agl_count = 10
+        if 'view_agl_count' in kwargs.keys():
+            view_agl_count = kwargs['view_agl_count']
         with util.open_read_file(path, 'vasp') as in_file:
             comment = in_file.readline().split()[0]
             scaling = float(in_file.readline())
@@ -144,7 +158,8 @@ class Structure(object):
             atoms = np.array(zip(atoms, elements),
                              dtype=[('position', '>f4', 3), ('element', '|S5')])
 
-        return Structure(comment, scaling, coordinates, atoms)
+        return Structure(comment, scaling, coordinates, atoms, 
+                         view_agl_count=view_agl_count)
 
 
     def to_vasp(self, path):
@@ -263,6 +278,7 @@ class Structure(object):
 
     def transform(self, trans_mat):
         self.coordinates = np.dot(self.coordinates, np.transpose(trans_mat))
+        self.view_agls = np.dot(self.view_agls, np.transpose(trans_mat))
         self.reconcile(according_to='D')
         return
 
@@ -339,10 +355,14 @@ class Structure(object):
 
 
 def main(argv):
-    struct = Structure.from_vasp(argv[1])
-    new_coord = np.identity(3) * 30.0
-    struct.grow_to_supercell(new_coord, 10000)
-    struct.to_xyz('grown')
+    struct = Structure.from_vasp(argv[1], view_agl_count=50)
+    # new_coord = np.identity(3) * 30.0
+    # struct.grow_to_supercell(new_coord, 10000)
+    # struct.to_xyz('grown')
+    print(struct.view_agls)
+    struct.transform(geom.get_rotation_matrix(struct.view_agls[24], np.array([1., 0., 0.])))
+    struct.to_file('view_agl_test', 'xyz')
+
 
 if __name__ == '__main__':
     main(sys.argv)

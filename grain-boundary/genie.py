@@ -20,11 +20,11 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
     search_size = 20
     coincident_pts = coin_srch.find_coincident_points(box_1, box_2, search_size, 0.5)
     print(str(len(coincident_pts)) + ' / ' + str(search_size**3 - 1))
-    min_atom = 500
-    max_atom = 100000
+    min_atom = 0
+    max_atom = 10000
     min_vol = 0.5 * min_atom / (len(struct.direct) / np.linalg.det(struct.coordinates))
     max_vol = 0.5 * max_atom / (len(struct.direct) / np.linalg.det(struct.coordinates))
-    lattice = coin_srch.find_overlattice(coincident_pts, PI / 4, PI / 2, min_vol, max_vol, min_vec_len=7.0)
+    lattice = coin_srch.find_overlattice(coincident_pts, PI / 4, PI / 2, min_vol, max_vol, min_vec_len=0.0)
     print(lattice)
     lattice = lattice[0]
     print('Expected atoms: ' + str(2 * len(struct.direct) / np.linalg.det(struct.coordinates) * np.linalg.det(lattice)))
@@ -54,17 +54,17 @@ def gb_genie(struct, orien_1, orien_2, twist_agl, trans_vec):
 
 def main(argv):
     struct = Structure.from_vasp(argv[1])
-    # gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
+    gb_genie(struct, np.array([1., 1., 0.]), np.array([1., 0., 0.]), PI / 4, np.array([0, 0, 0]))
 
-    min_dist_dict = {
-        ('Cd', 'Te') : 2.8, 
-        ('Cd', 'Cd') : 3.0, 
-        ('Te', 'Te') : 3.0
-    }
-    coll_rmvl.remove_collision(struct, 0.01, min_dist_dict, fast=False,
-        random_delete=False)
-    struct.to_vasp('col_rem_test_fst')
-    struct.to_xyz('col_rem_test_fst')
+    # min_dist_dict = {
+    #     ('Cd', 'Te') : 2.87046, 
+    #     ('Cd', 'Cd') : 4.68745, 
+    #     ('Te', 'Te') : 4.68745
+    # }
+    # coll_rmvl.remove_collision(struct, 0.02, min_dist_dict, fast=True,
+    #     random_delete=False)
+    # struct.to_vasp('col_rem_test_fst')
+    # struct.to_xyz('col_rem_test_fst')
     
 if __name__ == '__main__':
     main(sys.argv)
