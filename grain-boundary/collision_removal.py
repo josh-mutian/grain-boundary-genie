@@ -1,3 +1,5 @@
+"""Routines to remove collision within a Structure object.
+"""
 import numpy as np
 import geometry as geom
 

@@ -1,3 +1,8 @@
+"""Constants that are used globally in the project should be placed here.
+
+Attributes:
+    PERIODIC_TABLE (dict): A mapping from element name to atomic number.
+"""
 import numpy as np
 
 

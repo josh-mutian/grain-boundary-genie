@@ -50,6 +50,19 @@ def tabulate(rows, sep="  "):
 
 
 def open_read_file(path, extension):
+    """Opens a file to read with some handling.
+    
+    Args:
+        path (str): Path to the file.
+        extension (str): Expected extension.
+    
+    Returns:
+        file: The file opened and ready to be read.
+    
+    Raises:
+        ValueError: Raised when the file does not exist or the extension does 
+            not match the one expected.
+    """
     if (path.split('.')[-1] != extension):
         raise ValueError('File %s is not of extension %s.' % (path, extension))
     if (not os.path.isfile(path)):
@@ -58,6 +71,17 @@ def open_read_file(path, extension):
 
 
 def open_write_file(path, overwrite_protect=True):
+    """Opens a file to write to with some handling.
+    
+    Args:
+        path (str): Path to the file.
+        overwrite_protect (bool, optional): When set to True, will give a new 
+            file name when the original designated file name has already 
+            existed instead of overwriting it.
+    
+    Returns:
+        file: The file opened and ready to be written to.
+    """
     if os.path.isfile(path) and overwrite_protect:
         path_split = path.split('.')
         if len(path_split) > 1:

@@ -1,3 +1,5 @@
+"""Definition and related methods of Configuration class which specifies a run.
+"""
 import numpy as np
 from math import pi as PI
 import utilities as util

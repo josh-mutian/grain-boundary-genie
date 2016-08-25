@@ -13,20 +13,21 @@ class Structure(object):
     """A class representing a crystal structure.
     
     Attributes:
-        cartesian (bool): A record nparray, representing the atoms in the 
-            Cartesian coordinates.
+        cartesian (nparray): An array of no record nparray, representing the 
+            atoms in the Cartesian coordinates.
         comment (str): Description of the crystal structure.
         coordinates (nparray): A 3*3 nparray with each row representing a 
             lattice vector.
-        direct (TYPE): A record nparray, representing the atoms in direct
-            mode.
+        direct (nparray): An array of no record nparray, representing the 
+            atoms in the direct coordinates.
         elements (str set): A set of all element types present in the 
             structure.    
+        view_agls (nparray): An array of viewing angles (n * 3).
     """
 
     def __init__(self, comment, scaling, coordinates, atoms, view_agl_count=10):
         """Initializes a new Structure object.
-
+        
         Args:
             comment (str): Description of the crystal structure.
             scaling (float): The scaling.
@@ -35,6 +36,11 @@ class Structure(object):
             atoms (nparray): A record type nparray with two fields: 'position' 
                 representing the positions with nparray of length 3, and 
                 'element' representing the name of the elements as string.
+            view_agl_count (int, optional): Number of viewing angles searched
+                and recommended.
+        
+        Raises:
+            ValueError: Raised when the input coordinate system is singular.
         """
         self.comment = '_'.join(comment.split())
         self.coordinates = coordinates * scaling
@@ -50,7 +56,7 @@ class Structure(object):
 
     def __str__(self):
         """The to-string method.
-
+        
         Returns:
             str: A string showing all the attributes of an object.
         """
@@ -83,6 +89,14 @@ class Structure(object):
         return res
 
     def find_viewing_angle(self, view_agl_count):
+        """Searches for and recommends viewing angles in a Structure object.
+        
+        Args:
+            view_agl_count (int): Numbers of viewing angles to recommend.
+        
+        Returns:
+            nparray: A list of vectors (n * 3).
+        """
         dist_to_ctr = np.apply_along_axis(np.linalg.norm, 1, 
             self.cartesian['position'] - np.dot(np.array([.5, .5, .5]), 
             self.coordinates))
@@ -111,6 +125,20 @@ class Structure(object):
 
     @staticmethod
     def from_file(path, **kwargs):
+        """A unified method to parse a file and generate Structure object.
+        
+        Args:
+            path (str): Path to file.
+            **kwargs (dict): Keyword arguments for potential arguments to pass
+                to the functions.
+        
+        Returns:
+            Structure obj: A Structure object with fields set accordingly.
+        
+        Raises:
+            ValueError: Raised when extension of the path string is not
+                supported.
+        """
         path_split = path.split('.')
         if len(path_split) <= 0:
             typ = ''
@@ -123,17 +151,47 @@ class Structure(object):
             raise ValueError('Parser for file type %s not found.' % typ)
 
     def to_file(self, path, typ, overwrite_protect=True, **kwargs):
+        """A unified method to output Structure object as file.
+        
+        Args:
+            path (str): Path of the output file.
+            typ (str): Output type.
+            overwrite_protect (bool, optional): When set to True, will 
+            generate new file name if file exists instead of overwriting.
+            **kwargs (dict): Keyword arguments for potential arguments to pass
+                to the functions.
+        
+        Returns:
+            (void): Does not return.
+        
+        Raises:
+            ValueError: Raised when type of output file is not supported.
+        """
         if typ == 'vasp':
-            return self.to_vasp(path, overwrite_protect)
+            self.to_vasp(path, overwrite_protect)
         elif typ == 'xyz':
-            return self.to_xyz(path, overwrite_protect)
+            self.to_xyz(path, overwrite_protect)
         elif typ == 'ems':
-            return self.to_ems(path, overwrite_protect, **kwargs)
+            self.to_ems(path, overwrite_protect, **kwargs)
         else:
             raise ValueError('Exporter for file type %s not found.' % typ)
 
     @staticmethod
     def from_vasp(path, **kwargs):
+        """Takes a .vasp file and generate Structure object.
+        
+        Args:
+            path (str): Path to the file.
+            **kwargs (dict): Supports keyword 'view_agl_count' to set how many
+            viewing angles to find and recommend.
+        
+        Returns:
+            Structure obj: A Structure object with fields set accordingly.
+        
+        Raises:
+            ValueError: Raised when format is not in accordance with 
+                expectation.
+        """
         view_agl_count = 10
         if 'view_agl_count' in kwargs.keys():
             view_agl_count = kwargs['view_agl_count']
@@ -174,13 +232,24 @@ class Structure(object):
             for _ in range(0, sum(element_count)):
                 atoms.append(map(float, in_file.readline().split()[0:3]))
             atoms = np.array(zip(atoms, elements),
-                             dtype=[('position', '>f4', 3), ('element', '|S5')])
+                             dtype=[('position', '>f4', 3), 
+                                    ('element', '|S5')])
 
         return Structure(comment, scaling, coordinates, atoms, 
                          view_agl_count=view_agl_count)
 
 
     def to_vasp(self, path, overwrite_protect):
+        """Outputs the Structure object as .vasp file.
+        
+        Args:
+            path (str): Path to the file.
+            overwrite_protect (bool): When set to true, avoid overwriting 
+                existing files.
+        
+        Returns:
+            (void): Does not return.
+        """
         out_name = path if path.split('.')[-1] == 'vasp' else path + '.vasp'
         with util.open_write_file(out_name, overwrite_protect) as out_file:
             out_file.write(self.comment + '\n1.0\n')
@@ -214,6 +283,16 @@ class Structure(object):
         return
 
     def to_xyz(self, path, overwrite_protect):
+        """Outputs the Structure object as .xyz file.
+        
+        Args:
+            path (str): Path to the file.
+            overwrite_protect (bool): When set to true, avoid overwriting 
+                existing files.
+        
+        Returns:
+            (void): Does not return.
+        """
         self.reconcile(according_to='D')
         out_name = path if path.split('.')[-1] == 'xyz' else path + '.xyz'
         with util.open_write_file(out_name, overwrite_protect) as out_file:
@@ -228,14 +307,19 @@ class Structure(object):
 
     def to_ems(self, path, overwrite_protect, **kwargs):
         """Outputs a Structure object as .ems file.
-
+        
         Args:
             path (str): Path of the output file.
-            occ (float): A constant provided by the user.
-            wobble (float): A constant provided by the user.
-
+            overwrite_protect (bool): When set to true, avoid overwriting 
+                existing files.
+            **kwargs (dict): Keyword arguments 'occ' and 'wobble' must be
+                provided.
+        
         Returns:
             (void): Does not return.
+        
+        Raises:
+            ValueError: Raised when required keyword arguments are not present
         """
         keywords = ['occ', 'wobble']
         if not all(map(lambda x : x in kwargs.keys(), keywords)):
@@ -248,8 +332,8 @@ class Structure(object):
         unit_lengths = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
                                            0, self.cartesian['position'])
         rows = []
-        rows.append(['', '', '%.4f' % unit_lengths[0], '%.4f' % unit_lengths[1],
-                     '%.4f' % unit_lengths[2]])
+        rows.append(['', '', '%.4f' % unit_lengths[0], 
+                     '%.4f' % unit_lengths[1], '%.4f' % unit_lengths[2]])
         local_dict = {}
         for ele in self.elements:
             local_dict[ele] = PERIODIC_TABLE[ele]
@@ -269,13 +353,13 @@ class Structure(object):
 
     def reconcile(self, according_to='C'):
         """Keep direct and cartesian fields of a Structure object consistent.
-
+        
         Args:
             according_to (str, optional): Description
-
+        
         Returns:
             TYPE: Description
-
+        
         Raises:
             ValueError: Description
         """
@@ -295,6 +379,16 @@ class Structure(object):
         return
 
     def transform(self, trans_mat):
+        """Applies transform matrix to Structure object.
+        
+        Args:
+            trans_mat (nparray): Transform matrix (3 * 3), must have 
+                determinant of 1.
+        
+        Returns:
+            (void): Doew not return.
+        """
+        assert (np.linalg.det(trans_mat) - 1.0) < 1e-3
         self.coordinates = np.dot(self.coordinates, np.transpose(trans_mat))
         self.view_agls = np.dot(self.view_agls, np.transpose(trans_mat))
         self.reconcile(according_to='D')
@@ -304,12 +398,15 @@ class Structure(object):
         """Grow the current struct to a super cell to fill the new lattice box.
         
         Args:
-            lattice_vecs (TYPE): nparray of 3*3 representing 3 new lattice 
+            lattice_vecs (nparray): nparray of 3*3 representing 3 new lattice 
                 vectors.
-            max_atoms (TYPE): Maximum number of atoms.
+            max_atoms (int): Maximum number of atoms.
         
         Returns:
             (void): Does not return.
+        
+        Raises:
+            ValueError: Raised when grown structure is empty.
         """
         # First calculate the inverse while strengthening the diagonal.
         new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
@@ -362,6 +459,16 @@ class Structure(object):
 
     @staticmethod
     def combine_structures(struct_1, struct_2):
+        """Combines two Structure objects with the same coordinates: place the 
+            two Structures objects next to each other along the c axis.
+        
+        Args:
+            struct_1 (Structure obj): One Structure object.
+            struct_2 (Structure obj): Another Structure object.
+        
+        Returns:
+            Structure obj: The combined structure.
+        """
         # Assuming that these structures have same lattice vector sets. We extend
         # the c direction by 2 and shift struct_2 to that place. 
         struct_1.direct['position'][:, 2] /= 2.0
@@ -372,19 +479,3 @@ class Structure(object):
         struct_1.comment = struct_1.comment + '_' + struct_2.comment
         struct_1.reconcile(according_to='D')
         return struct_1
-
-
-def main(argv):
-    struct = Structure.from_vasp(argv[1], view_agl_count=10)
-    # new_coord = np.identity(3) * 30.0
-    # struct.grow_to_supercell(new_coord, 10000)
-    # struct.to_xyz('grown')
-    box = np.array([[ -3.20877273e+01, 7.55710479e-15, 3.20877273e+01],
-                    [  3.20877273e+0, -5.18615990e+01, 3.20877273e+01],
-                    [  3.20877273e+0, -6.48269987e+00, 7.79273377e+01]])
-    struct.grow_to_supercell(box, 5000)
-    struct.to_file('grow_test', 'vasp')
-
-
-if __name__ == '__main__':
-    main(sys.argv)

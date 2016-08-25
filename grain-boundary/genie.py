@@ -1,3 +1,5 @@
+"""The Grain-boundary Genie main routine.
+"""
 import sys
 import os
 import copy
@@ -12,7 +14,14 @@ from math import pi as PI
 
 
 def genie(conf):
-    print(conf)
+    """Executes the Grain-Boundary Genie routine based on Configuration object.
+    
+    Args:
+        conf (Configuration object): Contains specifications of the run.
+    
+    Returns:
+        (void): Does not return.
+    """
     # First read in the input files.
     if conf.struct_1 == conf.struct_2:
         orig_1 = Structure.from_file(conf.struct_1, 
@@ -28,8 +37,8 @@ def genie(conf):
     atom_count_unit_vol = (len(orig_1.direct) + len(orig_2.direct)) / \
         (abs(np.linalg.det(orig_1.coordinates)) + 
          abs(np.linalg.det(orig_2.coordinates)))
-    min_vol = conf.atom_count_range[0] / atom_count_unit_vol
-    max_vol = conf.atom_count_range[1] / atom_count_unit_vol
+    min_vol = 0.5 * conf.atom_count_range[0] / atom_count_unit_vol
+    max_vol = 0.5 * conf.atom_count_range[1] / atom_count_unit_vol
 
     # Check and create folder for output files.
     if len(conf.output_dir) != 0:
@@ -71,7 +80,7 @@ def genie(conf):
             for box in lattice: 
                 print('Current lattice vector set:')
                 print(box)
-                print('Expected atom count: %d' % int(np.linalg.det(box) * atom_count_unit_vol))
+                print('Expected atom count: %d' % (int(np.linalg.det(box) * atom_count_unit_vol) * 2))
 
                 count += 1
                 s_1_cpy = copy.deepcopy(struct_1)
@@ -80,9 +89,9 @@ def genie(conf):
                 try:
                     # Grow to super-cell.
                     s_1_cpy.grow_to_supercell(box, 
-                        conf.atom_count_range[1] / 2)
+                        conf.atom_count_range[1] * 0.6)
                     s_2_cpy.grow_to_supercell(box, 
-                        conf.atom_count_range[1] / 2)
+                        conf.atom_count_range[1] * 0.6)
                     # Combine two structures.
                     combined_struct = Structure.combine_structures(
                         s_1_cpy, s_2_cpy)
@@ -126,6 +135,18 @@ def genie(conf):
             pass
 
 def generate_name(conf, orien_1, orien_2, twist_agl, count):
+    """Generates names of the structure based on transformations.
+    
+    Args:
+        conf (Configuration obj): A specification for the run.
+        orien_1 (nparray): Orientation vector (3).
+        orien_2 (nparray): Orientation vector (3).
+        twist_agl (float): Twisting angle, in rad.
+        count (int): The number of the current structure.
+    
+    Returns:
+        str, str: Path for the output file, and name for the output structure.
+    """
     struct_1_name = conf.struct_1.split('/')[-1]
     struct_1_name = struct_1_name.split('.')
     if len(struct_1_name) > 1:
@@ -147,11 +168,19 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
 
     struct_name = '_'.join([struct_1_name, struct_2_name, trans_name])
     file_name = os.path.join(conf.output_dir, struct_name)
-    print(file_name)
-    print(struct_name)
     return file_name, struct_name
 
 def main(argv):
+    """The main function that will be called from command line.
+    
+    Args:
+        argv (str list): A list of string arguments taken from command line. 
+            Can have zero extra arguments or one (specifying a file path or a 
+            directory).
+    
+    Returns:
+        (void): Does not return.
+    """
     if len(argv) < 2:
         # In this case, find all .json files in the current directory.
         for conf_file in [f for f in os.listdir('.') if f.endswith('.json')]:
