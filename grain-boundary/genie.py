@@ -28,8 +28,8 @@ def genie(conf):
     atom_count_unit_vol = (len(orig_1.direct) + len(orig_2.direct)) / \
         (abs(np.linalg.det(orig_1.coordinates)) + 
          abs(np.linalg.det(orig_2.coordinates)))
-    min_vol = 0.5 * conf.atom_count_range[0] / atom_count_unit_vol
-    max_vol = 0.5 * conf.atom_count_range[1] / atom_count_unit_vol
+    min_vol = conf.atom_count_range[0] / atom_count_unit_vol
+    max_vol = conf.atom_count_range[1] / atom_count_unit_vol
 
     # Check and create folder for output files.
     if len(conf.output_dir) != 0:
@@ -126,13 +126,15 @@ def genie(conf):
             pass
 
 def generate_name(conf, orien_1, orien_2, twist_agl, count):
-    struct_1_name = conf.struct_1.split('.')
+    struct_1_name = conf.struct_1.split('/')[-1]
+    struct_1_name = struct_1_name.split('.')
     if len(struct_1_name) > 1:
         struct_1_name = '_'.join(struct_1_name[0:-1])
     else:
         struct_1_name = conf.struct_1
 
-    struct_2_name = conf.struct_2.split('.')
+    struct_2_name = conf.struct_2.split('/')[-1]
+    struct_2_name = struct_2_name.split('.')
     if len(struct_2_name) > 1:
         struct_2_name = '_'.join(struct_2_name[0:-1])
     else:
@@ -145,27 +147,29 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
 
     struct_name = '_'.join([struct_1_name, struct_2_name, trans_name])
     file_name = os.path.join(conf.output_dir, struct_name)
+    print(file_name)
+    print(struct_name)
     return file_name, struct_name
 
 def main(argv):
     if len(argv) < 2:
-        # In this case, find all .gbconf files in the current directory.
-        for conf_file in [f for f in os.listdir('.') if f.endswith('.gbconf')]:
+        # In this case, find all .json files in the current directory.
+        for conf_file in [f for f in os.listdir('.') if f.endswith('.json')]:
             try:
-                genie(Configuration.from_gbconf_file(conf_file))
+                genie(Configuration.from_json_file(conf_file))
             except Exception, e:
                 print(str(e))
             else:
                 pass
     elif os.path.isfile(argv[1]):
         # In this case, read in the file and run genie.
-        genie(Configuration.from_gbconf_file(argv[1]))
+        genie(Configuration.from_json_file(argv[1]))
     elif os.path.isdir(argv[1]):
-        # In this case, find all .gbconf files in the given directory.
+        # In this case, find all .json files in the given directory.
         for conf_file in [f for f in os.listdir(agrv[1]) if \
-            f.endswith('.gbconf')]:
+            f.endswith('.json')]:
             try:
-                genie(Configuration.from_gbconf_file(conf_file))
+                genie(Configuration.from_json_file(conf_file))
             except Exception, e:
                 traceback.print_tb(sys.exc_info()[2])
                 print(str(e))

@@ -76,7 +76,7 @@ class Configuration(object):
         self.skip_collision_removal = False
         self.fast_removal = True
         self.min_atom_dist = {}
-        self.boundary_radius = 0.02
+        self.boundary_radius = 0.01
         self.random_delete_atom = False
 
         # Output format.
@@ -95,7 +95,7 @@ class Configuration(object):
         return str(self.__dict__)
 
     @staticmethod
-    def from_gbconf_file(path):
+    def from_json_file(path):
         """Reads an input file and converts it into a Configuration object.
         
         Args:
@@ -110,8 +110,8 @@ class Configuration(object):
                 (This is the very minimum information required to generate
                 a Configuration object.)
         """
-        # First take in the gbconf file and parse JSON.
-        with util.open_read_file(path, 'gbconf') as input_file:
+        # First take in the json file and parse JSON.
+        with util.open_read_file(path, 'json') as input_file:
             input_json = input_file.read()
             input_file.close()
         parsed_json = json.loads(input_json)
@@ -144,7 +144,7 @@ class Configuration(object):
 
         if 'mutual_view_agl_tolerance' in keys:
             config_object.mutual_view_agl_tolerance = \
-                float(parsed_json['mutual_view_agl_tolerance'])
+                np.deg2rad(float(parsed_json['mutual_view_agl_tolerance']))
 
         # Coincident point search parameters.
         if 'coincident_pts_tolerance' in keys:
@@ -160,8 +160,8 @@ class Configuration(object):
                 int(parsed_json['max_coincident_pts_searched'])
         if 'lattice_vec_agl_range' in keys:
             config_object.lattice_vec_agl_range = \
-                (float(parsed_json['lattice_vec_agl_range'][0]),
-                 float(parsed_json['lattice_vec_agl_range'][1]))
+                (np.deg2rad(float(parsed_json['lattice_vec_agl_range'][0])),
+                 np.deg2rad(float(parsed_json['lattice_vec_agl_range'][1])))
         if 'min_vec_length' in keys:
             config_object.min_vec_length = float(parsed_json['min_vec_length'])
         if 'atom_count_range' in keys:
