@@ -198,6 +198,64 @@ def remove_collision_on_interface(struct, boundary_radius, min_dist_dict,
           (orig_atom_count - final_atom_count))
     return orig_atom_count - final_atom_count
 
+def remove_collision_at_corners(struct, boundary_radius, min_dist_dict, 
+                                random_delete=False):
+    """Removes collisions at corners of structures.
+    
+    Args:
+        struct (Structure obj): The Structure object to remove collision.
+        boundary_radius (float): A proportion such that on each direction 
+            atoms within the distance of this proportion of lattice vector
+            length will be considered boundary atoms. 
+        min_dist_dict (dict): A dictionary where the key is tuple of atom type
+            names and value is the minimum distance in angstrom.
+        random_delete (bool, optional): When set to true, shuffle the list 
+            of atoms before removing collision.
+    
+    Returns:
+        int: Number of atoms removed.
+    """
+    orig_atom_count = len(struct.cartesian)
+    dir_vecs = geom.cartesian_product(np.array([0., 1.]), 3)
+
+    corner_atoms = []
+    corner_indic = []
+
+    for dv in dir_vecs:
+        idx = np.logical_and(
+            np.apply_along_axis(np.all, 1, 
+                struct.direct['position'] < (dv + boundary_radius)), 
+            np.apply_along_axis(np.all, 1, 
+                struct.direct['position'] > (dv - boundary_radius)))
+        candidate_atoms = struct.cartesian[idx]
+        struct.cartesian = struct.cartesian[np.logical_not(idx)]
+        
+        for atm in candidate_atoms:
+            qualify = True
+            for i in range(len(corner_atoms)):
+                if not qualify:
+                    break
+                shift = np.dot(dv - corner_indic[i], struct.coordinates)
+                corner_atoms[i]['position'] += shift
+                if not apart_by_safe_distance(min_dist_dict, corner_atoms[i], 
+                                              atm):
+                    qualify = False
+                corner_atoms[i]['position'] -= shift
+            if qualify:    
+                corner_atoms.append(atm)
+                corner_indic.append(dv)
+
+        struct.reconcile(according_to='C')
+
+    if len(corner_atoms) > 0:
+        struct.cartesian = np.concatenate((struct.cartesian, 
+                                           np.array(corner_atoms)))
+    struct.reconcile(according_to='C')
+
+    final_atom_count = len(struct.cartesian)
+    print('%d atoms removed at corners.' % \
+        (orig_atom_count - final_atom_count))
+    return orig_atom_count - final_atom_count
 
 def min_image_remove_collision(struct, min_dist_dict, random_delete=False):
     """Use minimum image convention algorithm to remove collision.
@@ -267,6 +325,8 @@ def remove_collision(struct, boundary_radius, min_dist_dict, fast=True,
             remove_collision_surface_pair(struct, boundary_radius,
                                           min_dist_dict, dir_vec,
                                           random_delete)
+        remove_collision_at_corners(struct, boundary_radius, min_dist_dict,
+                                    random_delete)
     else:
         min_image_remove_collision(struct, min_dist_dict)
 
