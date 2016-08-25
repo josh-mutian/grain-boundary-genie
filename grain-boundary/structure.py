@@ -104,7 +104,7 @@ class Structure(object):
                 agl_in_between = geom.angle_between_vectors(agl_1, agl_2)
                 # If an angle is within the tolerance, return it.
                 if agl_in_between < tol or agl_in_between > (PI - tol):
-                    return agl_1
+                    return (agl_1 + agl_2) / 2
 
         # If no such angle exists, return the first view angle of struct_1.
         return struct_1.view_agls[0]
