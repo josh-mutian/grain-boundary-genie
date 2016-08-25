@@ -51,14 +51,14 @@ def tabulate(rows, sep="  "):
 
 def open_read_file(path, extension):
     """Opens a file to read with some handling.
-    
+
     Args:
         path (str): Path to the file.
         extension (str): Expected extension.
-    
+
     Returns:
         file: The file opened and ready to be read.
-    
+
     Raises:
         ValueError: Raised when the file does not exist or the extension does 
             not match the one expected.
@@ -72,13 +72,13 @@ def open_read_file(path, extension):
 
 def open_write_file(path, overwrite_protect=True):
     """Opens a file to write to with some handling.
-    
+
     Args:
         path (str): Path to the file.
         overwrite_protect (bool, optional): When set to True, will give a new 
             file name when the original designated file name has already 
             existed instead of overwriting it.
-    
+
     Returns:
         file: The file opened and ready to be written to.
     """

@@ -15,27 +15,27 @@ from math import pi as PI
 
 def genie(conf):
     """Executes the Grain-Boundary Genie routine based on Configuration object.
-    
+
     Args:
         conf (Configuration object): Contains specifications of the run.
-    
+
     Returns:
         (void): Does not return.
     """
     # First read in the input files.
     if conf.struct_1 == conf.struct_2:
-        orig_1 = Structure.from_file(conf.struct_1, 
+        orig_1 = Structure.from_file(conf.struct_1,
                                      view_agl_count=conf.view_agl_count)
         orig_2 = copy.deepcopy(orig_1)
     else:
-        orig_1 = Structure.from_file(conf.struct_1, 
+        orig_1 = Structure.from_file(conf.struct_1,
                                      view_agl_count=conf.view_agl_count)
         orig_2 = Structure.from_file(conf.struct_2,
                                      view_agl_count=conf.view_agl_count)
 
-    # Calculate min and max volume based on 
+    # Calculate min and max volume based on
     atom_count_unit_vol = (len(orig_1.direct) + len(orig_2.direct)) / \
-        (abs(np.linalg.det(orig_1.coordinates)) + 
+        (abs(np.linalg.det(orig_1.coordinates)) +
          abs(np.linalg.det(orig_2.coordinates)))
     min_vol = 0.5 * conf.atom_count_range[0] / atom_count_unit_vol
     max_vol = 0.5 * conf.atom_count_range[1] / atom_count_unit_vol
@@ -60,7 +60,7 @@ def genie(conf):
             # Transform structures.
             struct_1.transform(trans_1)
             struct_2.transform(trans_2)
-            # Find mutual viewing angle and generate a matrix that will turn 
+            # Find mutual viewing angle and generate a matrix that will turn
             # the mutual viewing angle into the direction of [1, 0, 0].
             mutual_view_agl = Structure.find_mutual_viewing_angle(
                 struct_1, struct_2, tol=conf.mutual_view_agl_tolerance)
@@ -68,19 +68,21 @@ def genie(conf):
                 mutual_view_agl, np.array([1., 0., 0.]))
             # Find coincident points.
             coincident_pts = coin_srch.find_coincidence_points(
-                struct_1.coordinates, struct_2.coordinates, 
+                struct_1.coordinates, struct_2.coordinates,
                 conf.coincident_pts_search_step, conf.coincident_pts_tolerance)
-            lattice = coin_srch.find_overlattice(coincident_pts,
-                conf.lattice_vec_agl_range[0], conf.lattice_vec_agl_range[1], 
-                min_vol, max_vol, max_pts=conf.max_coincident_pts_searched, 
+            lattice = coin_srch.find_overlattice(
+                coincident_pts, conf.lattice_vec_agl_range[0], 
+                conf.lattice_vec_agl_range[1], min_vol, max_vol, 
+                max_pts=conf.max_coincident_pts_searched, 
                 min_vec_len=conf.min_vec_length)
 
             count = 0
             # Generate for each qualified lattice vector set.
-            for box in lattice: 
+            for box in lattice:
                 print('Current lattice vector set:')
                 print(box)
-                print('Expected atom count: %d' % (int(np.linalg.det(box) * atom_count_unit_vol) * 2))
+                print('Expected atom count: %d' %
+                      (int(np.linalg.det(box) * atom_count_unit_vol) * 2))
 
                 count += 1
                 s_1_cpy = copy.deepcopy(struct_1)
@@ -88,40 +90,40 @@ def genie(conf):
 
                 try:
                     # Grow to super-cell.
-                    s_1_cpy.grow_to_supercell(box, 
-                        conf.atom_count_range[1] * 0.6)
-                    s_2_cpy.grow_to_supercell(box, 
-                        conf.atom_count_range[1] * 0.6)
+                    s_1_cpy.grow_to_supercell(box,
+                                              conf.atom_count_range[1] * 0.6)
+                    s_2_cpy.grow_to_supercell(box,
+                                              conf.atom_count_range[1] * 0.6)
                     # Combine two structures.
                     combined_struct = Structure.combine_structures(
                         s_1_cpy, s_2_cpy)
 
-                    # Sanity check: whether the actual atom count matches with 
+                    # Sanity check: whether the actual atom count matches with
                     # expected atom count.
                     if len(combined_struct.direct) < np.linalg.det(
-                        combined_struct.coordinates) * \
-                        atom_count_unit_vol * 0.80:
+                            combined_struct.coordinates) * \
+                            atom_count_unit_vol * 0.80:
                         print('Expected atom count not met.')
                         count -= 1
                         continue
 
-
                     if not conf.skip_collision_removal:
                         # Collision removal routine.
-                        coll_rmvl.remove_collision(combined_struct, 
-                            conf.boundary_radius, conf.min_atom_dist, 
-                            fast=conf.fast_removal, 
+                        coll_rmvl.remove_collision(
+                            combined_struct, conf.boundary_radius, 
+                            conf.min_atom_dist, fast=conf.fast_removal,
                             random_delete=conf.random_delete_atom)
 
                     # Turn the combined structure according to mutual viewing
                     # angle.
                     combined_struct.transform(mat_turn_mutual)
                     # Update names and output.
-                    file_name, struct_name = generate_name(conf, orien_1, orien_2, twist_agl, count)
+                    file_name, struct_name = generate_name(
+                        conf, orien_1, orien_2, twist_agl, count)
                     combined_struct.comment = struct_name
                     combined_struct.to_file(
-                        file_name, conf.output_format, 
-                        overwrite_protect=conf.overwrite_protect, 
+                        file_name, conf.output_format,
+                        overwrite_protect=conf.overwrite_protect,
                         **conf.output_options)
                 except Exception, e:
                     traceback.print_tb(sys.exc_info()[2])
@@ -134,16 +136,17 @@ def genie(conf):
         else:
             pass
 
+
 def generate_name(conf, orien_1, orien_2, twist_agl, count):
     """Generates names of the structure based on transformations.
-    
+
     Args:
         conf (Configuration obj): A specification for the run.
         orien_1 (nparray): Orientation vector (3).
         orien_2 (nparray): Orientation vector (3).
         twist_agl (float): Twisting angle, in rad.
         count (int): The number of the current structure.
-    
+
     Returns:
         str, str: Path for the output file, and name for the output structure.
     """
@@ -161,7 +164,7 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
     else:
         struct_2_name = conf.struct_2
 
-    trans_name = [''.join(str(orien_1.tolist()).split()), 
+    trans_name = [''.join(str(orien_1.tolist()).split()),
                   ''.join(str(orien_2.tolist()).split()),
                   str(np.rad2deg(twist_agl)), str(count)]
     trans_name = '_'.join(trans_name)
@@ -170,14 +173,15 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
     file_name = os.path.join(conf.output_dir, struct_name)
     return file_name, struct_name
 
+
 def main(argv):
     """The main function that will be called from command line.
-    
+
     Args:
         argv (str list): A list of string arguments taken from command line. 
             Can have zero extra arguments or one (specifying a file path or a 
             directory).
-    
+
     Returns:
         (void): Does not return.
     """
@@ -195,8 +199,8 @@ def main(argv):
         genie(Configuration.from_json_file(argv[1]))
     elif os.path.isdir(argv[1]):
         # In this case, find all .json files in the given directory.
-        for conf_file in [f for f in os.listdir(agrv[1]) if \
-            f.endswith('.json')]:
+        for conf_file in [f for f in os.listdir(agrv[1]) if
+                          f.endswith('.json')]:
             try:
                 genie(Configuration.from_json_file(conf_file))
             except Exception, e:

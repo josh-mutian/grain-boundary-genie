@@ -8,7 +8,7 @@ import json
 
 class Configuration(object):
     """A class to specify how a grain-boundary genie runs.
-    
+
     Attributes:
         atom_count_range (tuple): The range of acceptable atom number in the 
             final structure.
@@ -50,19 +50,20 @@ class Configuration(object):
         view_agl_count (int): Number of viewing angles to recommend for each 
             structure.
     """
+
     def __init__(self, struct_1, struct_2):
         """Initializer for a Configuration object.
-        
+
         Args:
             struct_1 (str): Path to the input file of a structure.
             struct_2 (str): Path to the input file of another structure.
         """
         # Basic GB settings.
-        self.struct_1 = struct_1 
-        self.struct_2 = struct_2 
-        self.gb_settings = []    
-        self.view_agl_count = 10 
-        self.mutual_view_agl_tolerance = 0.0873 #
+        self.struct_1 = struct_1
+        self.struct_2 = struct_2
+        self.gb_settings = []
+        self.view_agl_count = 10
+        self.mutual_view_agl_tolerance = 0.0873
 
         # Coincident point search.
         self.coincident_pts_tolerance = 1.0
@@ -90,7 +91,7 @@ class Configuration(object):
 
     def __str__(self):
         """Generates a string representation of a Configuration object.
-        
+
         Returns:
             str: The string representation.
         """
@@ -99,14 +100,14 @@ class Configuration(object):
     @staticmethod
     def from_json_file(path):
         """Reads an input file and converts it into a Configuration object.
-        
+
         Args:
             path (str): The path to an input file formatted as JSON.
-        
+
         Returns:
             Configuration obj: A Configuration object with fields set according
                 to the input JSON file.
-        
+
         Raises:
             ValueError: Raised when path of structure 1 or 2 is not provided.
                 (This is the very minimum information required to generate
@@ -135,9 +136,9 @@ class Configuration(object):
         if not 'gb_settings' in keys:
             return config_object
         config_object.gb_settings = map(
-            lambda x : [np.array(x[0]).astype(float), 
-                        np.array(x[1]).astype(float),
-                        np.deg2rad(float(x[2]))], 
+            lambda x: [np.array(x[0]).astype(float),
+                       np.array(x[1]).astype(float),
+                       np.deg2rad(float(x[2]))],
             parsed_json['gb_settings'])
 
         # Optional value viewing angle number.
@@ -187,7 +188,8 @@ class Configuration(object):
             config_object.boundary_radius = \
                 float(parsed_json['boundary_radius'])
         if 'random_delete_atom' in keys:
-            config_object.random_delete_atom = parsed_json['random_delete_atom']
+            config_object.random_delete_atom = \
+                parsed_json['random_delete_atom']
 
         # Output format parameters.
         if 'output_format' in keys:
@@ -197,7 +199,8 @@ class Configuration(object):
         if 'output_dir' in keys:
             config_object.output_dir = parsed_json['output_dir']
         if 'output_name_prefix' in keys:
-            config_object.output_name_prefix = parsed_json['output_name_prefix']
+            config_object.output_name_prefix = \
+                parsed_json['output_name_prefix']
         if 'overwrite_protect' in keys:
             config_object.overwrite_protect = parsed_json['overwrite_protect']
 

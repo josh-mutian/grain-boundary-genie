@@ -3,32 +3,35 @@
 import numpy as np
 import geometry as geom
 
+
 def find_coincidence_points(box_1, box_2, max_int, tol):
     """Searches for coincidence points.
-    
+
     Args:
         box_1 (nparray): Coordinate system of a structure (3 * 3).
         box_2 (nparray): COordinate system of another structure (3 * 3).
         max_int (int): Maximum integer to grow and search.
         tol (float): Tolerance of distance between coincidence points, in 
             angstrom.
-    
+
     Returns:
         nparray: A matrix of coincidence points (n * 3).
     """
     search_points = geom.cartesian_product(np.arange(max_int), 3)
     vecs = np.dot(search_points, box_1)
     nearest_int_mult = np.rint(np.dot(vecs, np.linalg.inv(box_2)))
-    dist = np.apply_along_axis(np.linalg.norm, 1, (np.dot(nearest_int_mult, box_2) - vecs))
+    dist = np.apply_along_axis(
+        np.linalg.norm, 1, (np.dot(nearest_int_mult, box_2) - vecs))
     vecs = vecs[np.where(dist <= tol)]
     vecs = vecs[np.argsort(np.apply_along_axis(np.linalg.norm, 1, vecs))]
     return vecs[1:]
 
-def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol, 
+
+def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
                      max_pts=100, min_vec_len=0.):
     """Searches for sets of three coincidence points and output the sets that
     meets all the requirements.
-    
+
     Args:
         coincident_pts (nparray): A matrix of coincidence points (n * 3).
         min_agl (float): The minimum angle allowed between any two vectors, 
@@ -43,10 +46,10 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
             search for the set of three vectors.
         min_vec_len (float, optional): The minimum length of any vector,
             in angstrom.
-    
+
     Returns:
         nparray: An nparray consisting a list of 3-vector sets (n * 3 * 3).
-    
+
     Raises:
         ValueError: Raised when the input coincidence point list has length
             less than 3 or no result can meet all requirements.
@@ -57,8 +60,8 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
         print('Too many coincident points; reduced to %d.' % max_pts)
         coincident_pts = coincident_pts[0:max_pts]
 
-    res = [] # Resulting lattice vectors: list of 3*3 nparrays.
-    vol = [] # Volume of boxes: list of floats.
+    res = []  # Resulting lattice vectors: list of 3*3 nparrays.
+    vol = []  # Volume of boxes: list of floats.
     for i in range(len(coincident_pts)):
         for j in range(i + 1, len(coincident_pts)):
             for k in range(j + 1, len(coincident_pts)):
@@ -71,7 +74,7 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
                     continue
                 vec_agls = np.array([
                     geom.angle_between_vectors(lat_vecs[0], lat_vecs[1]),
-                    geom.angle_between_vectors(lat_vecs[1], lat_vecs[2]), 
+                    geom.angle_between_vectors(lat_vecs[1], lat_vecs[2]),
                     geom.angle_between_vectors(lat_vecs[2], lat_vecs[0])
                 ])
                 if np.all(vec_agls > min_agl) and np.all(vec_agls < max_agl):

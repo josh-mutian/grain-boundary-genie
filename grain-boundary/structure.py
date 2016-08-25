@@ -11,7 +11,7 @@ from math import pi as PI
 
 class Structure(object):
     """A class representing a crystal structure.
-    
+
     Attributes:
         cartesian (nparray): An array of no record nparray, representing the 
             atoms in the Cartesian coordinates.
@@ -25,9 +25,10 @@ class Structure(object):
         view_agls (nparray): An array of viewing angles (n * 3).
     """
 
-    def __init__(self, comment, scaling, coordinates, atoms, view_agl_count=10):
+    def __init__(self, comment, scaling, coordinates, atoms, 
+                 view_agl_count=10):
         """Initializes a new Structure object.
-        
+
         Args:
             comment (str): Description of the crystal structure.
             scaling (float): The scaling.
@@ -38,7 +39,7 @@ class Structure(object):
                 'element' representing the name of the elements as string.
             view_agl_count (int, optional): Number of viewing angles searched
                 and recommended.
-        
+
         Raises:
             ValueError: Raised when the input coordinate system is singular.
         """
@@ -56,7 +57,7 @@ class Structure(object):
 
     def __str__(self):
         """The to-string method.
-        
+
         Returns:
             str: A string showing all the attributes of an object.
         """
@@ -90,19 +91,22 @@ class Structure(object):
 
     def find_viewing_angle(self, view_agl_count):
         """Searches for and recommends viewing angles in a Structure object.
-        
+
         Args:
             view_agl_count (int): Numbers of viewing angles to recommend.
-        
+
         Returns:
             nparray: A list of vectors (n * 3).
         """
-        dist_to_ctr = np.apply_along_axis(np.linalg.norm, 1, 
-            self.cartesian['position'] - np.dot(np.array([.5, .5, .5]), 
-            self.coordinates))
+        dist_to_ctr = np.apply_along_axis(
+            np.linalg.norm, 1, 
+            self.cartesian['position'] - np.dot(
+                np.array([.5, .5, .5]), 
+                self.coordinates))
         ctr_atoms = self.cartesian[np.argsort(dist_to_ctr)]
         agl_count = min(len(self.cartesian) - 1, view_agl_count)
-        view_agls = ctr_atoms[1:view_agl_count+1]['position'] - ctr_atoms[0]['position']
+        view_agls = ctr_atoms[1:view_agl_count +
+                              1]['position'] - ctr_atoms[0]['position']
         view_agls = np.apply_along_axis(geom.normalize_vector, 1, view_agls)
         return view_agls
 
@@ -126,15 +130,15 @@ class Structure(object):
     @staticmethod
     def from_file(path, **kwargs):
         """A unified method to parse a file and generate Structure object.
-        
+
         Args:
             path (str): Path to file.
             **kwargs (dict): Keyword arguments for potential arguments to pass
                 to the functions.
-        
+
         Returns:
             Structure obj: A Structure object with fields set accordingly.
-        
+
         Raises:
             ValueError: Raised when extension of the path string is not
                 supported.
@@ -152,7 +156,7 @@ class Structure(object):
 
     def to_file(self, path, typ, overwrite_protect=True, **kwargs):
         """A unified method to output Structure object as file.
-        
+
         Args:
             path (str): Path of the output file.
             typ (str): Output type.
@@ -160,10 +164,10 @@ class Structure(object):
             generate new file name if file exists instead of overwriting.
             **kwargs (dict): Keyword arguments for potential arguments to pass
                 to the functions.
-        
+
         Returns:
             (void): Does not return.
-        
+
         Raises:
             ValueError: Raised when type of output file is not supported.
         """
@@ -179,15 +183,15 @@ class Structure(object):
     @staticmethod
     def from_vasp(path, **kwargs):
         """Takes a .vasp file and generate Structure object.
-        
+
         Args:
             path (str): Path to the file.
             **kwargs (dict): Supports keyword 'view_agl_count' to set how many
             viewing angles to find and recommend.
-        
+
         Returns:
             Structure obj: A Structure object with fields set accordingly.
-        
+
         Raises:
             ValueError: Raised when format is not in accordance with 
                 expectation.
@@ -232,21 +236,20 @@ class Structure(object):
             for _ in range(0, sum(element_count)):
                 atoms.append(map(float, in_file.readline().split()[0:3]))
             atoms = np.array(zip(atoms, elements),
-                             dtype=[('position', '>f4', 3), 
+                             dtype=[('position', '>f4', 3),
                                     ('element', '|S5')])
 
-        return Structure(comment, scaling, coordinates, atoms, 
+        return Structure(comment, scaling, coordinates, atoms,
                          view_agl_count=view_agl_count)
-
 
     def to_vasp(self, path, overwrite_protect):
         """Outputs the Structure object as .vasp file.
-        
+
         Args:
             path (str): Path to the file.
             overwrite_protect (bool): When set to true, avoid overwriting 
                 existing files.
-        
+
         Returns:
             (void): Does not return.
         """
@@ -284,12 +287,12 @@ class Structure(object):
 
     def to_xyz(self, path, overwrite_protect):
         """Outputs the Structure object as .xyz file.
-        
+
         Args:
             path (str): Path to the file.
             overwrite_protect (bool): When set to true, avoid overwriting 
                 existing files.
-        
+
         Returns:
             (void): Does not return.
         """
@@ -307,32 +310,32 @@ class Structure(object):
 
     def to_ems(self, path, overwrite_protect, **kwargs):
         """Outputs a Structure object as .ems file.
-        
+
         Args:
             path (str): Path of the output file.
             overwrite_protect (bool): When set to true, avoid overwriting 
                 existing files.
             **kwargs (dict): Keyword arguments 'occ' and 'wobble' must be
                 provided.
-        
+
         Returns:
             (void): Does not return.
-        
+
         Raises:
             ValueError: Raised when required keyword arguments are not present
         """
         keywords = ['occ', 'wobble']
-        if not all(map(lambda x : x in kwargs.keys(), keywords)):
+        if not all(map(lambda x: x in kwargs.keys(), keywords)):
             raise ValueError(("A keyword argument containing all of %s "
-                "must be passed to the exporter to_ems().") % 
-                ', '.join(keywords))
+                              "must be passed to the exporter to_ems().") %
+                             ', '.join(keywords))
         occ = kwargs['occ']
         wobble = kwargs['wobble']
 
         unit_lengths = np.apply_along_axis(lambda x: np.amax(x) - np.amin(x),
                                            0, self.cartesian['position'])
         rows = []
-        rows.append(['', '', '%.4f' % unit_lengths[0], 
+        rows.append(['', '', '%.4f' % unit_lengths[0],
                      '%.4f' % unit_lengths[1], '%.4f' % unit_lengths[2]])
         local_dict = {}
         for ele in self.elements:
@@ -353,26 +356,26 @@ class Structure(object):
 
     def reconcile(self, according_to='C'):
         """Keep direct and cartesian fields of a Structure object consistent.
-        
+
         Args:
             according_to (str, optional): Description
-        
+
         Returns:
             TYPE: Description
-        
+
         Raises:
             ValueError: Description
         """
         if (according_to == 'C'):
             self.cartesian.sort(order='element')
             self.direct = copy.deepcopy(self.cartesian)
-            self.direct['position'] = np.dot(self.cartesian['position'], 
-                np.linalg.inv(self.coordinates))
+            self.direct['position'] = np.dot(self.cartesian['position'],
+                                             np.linalg.inv(self.coordinates))
         elif (according_to == 'D'):
             self.direct.sort(order='element')
             self.cartesian = copy.deepcopy(self.direct)
             self.cartesian['position'] = np.dot(self.cartesian['position'],
-                                            self.coordinates)
+                                                self.coordinates)
         else:
             raise ValueError('Argument according_to should either be' +
                              '"C" or "D".')
@@ -380,11 +383,11 @@ class Structure(object):
 
     def transform(self, trans_mat):
         """Applies transform matrix to Structure object.
-        
+
         Args:
             trans_mat (nparray): Transform matrix (3 * 3), must have 
                 determinant of 1.
-        
+
         Returns:
             (void): Doew not return.
         """
@@ -396,15 +399,15 @@ class Structure(object):
 
     def grow_to_supercell(self, lattice_vecs, max_atoms):
         """Grow the current struct to a super cell to fill the new lattice box.
-        
+
         Args:
             lattice_vecs (nparray): nparray of 3*3 representing 3 new lattice 
                 vectors.
             max_atoms (int): Maximum number of atoms.
-        
+
         Returns:
             (void): Does not return.
-        
+
         Raises:
             ValueError: Raised when grown structure is empty.
         """
@@ -412,13 +415,13 @@ class Structure(object):
         new_coord_inv = np.linalg.inv(lattice_vecs + np.identity(3) * 1e-5)
         # supercell_pos and search_dirs are from original LabView code.
         supercell_pos = map(np.array, [
-            [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 
+            [0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0],
             [0, -1, 0], [0, 0, -1]
         ])
         search_dirs = map(np.array, [
-            [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0], 
-            [0, 0, -1], [1, 1, 0], [1, -1, 0], [-1, 1, 0], [0, 1, 1], 
-            [0, 1, -1], [0, -1, 1], [1, 0, 1], [1, 0, -1], [-1, 0, 1], 
+            [1, 0, 0], [0, 1, 0], [0, 0, 1], [-1, 0, 0], [0, -1, 0],
+            [0, 0, -1], [1, 1, 0], [1, -1, 0], [-1, 1, 0], [0, 1, 1],
+            [0, 1, -1], [0, -1, 1], [1, 0, 1], [1, 0, -1], [-1, 0, 1],
             [1, 1, 1], [-1, -1, -1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]
         ])
         searched_pos = set()
@@ -432,20 +435,22 @@ class Structure(object):
             shift_vector = np.dot(current_pos, self.coordinates)
             shifted = copy.deepcopy(self.cartesian)
             shifted['position'] += shift_vector
-            # Convert the shifted vectors into direct with respect to the 
+            # Convert the shifted vectors into direct with respect to the
             # new coordinate system given by lattice_vec
             shifted['position'] = np.dot(shifted['position'], new_coord_inv)
-            # Filter out the atoms that are contained by the new coordinate 
+            # Filter out the atoms that are contained by the new coordinate
             # system.
-            shifted = shifted[np.apply_along_axis(geom.valid_direct_vec, 
+            shifted = shifted[np.apply_along_axis(geom.valid_direct_vec,
                                                   1, shifted['position'])]
             if len(shifted) > 0:
                 if len(enlarged_struct) > 0:
-                    enlarged_struct = np.concatenate((enlarged_struct, shifted))
+                    enlarged_struct = np.concatenate(
+                        (enlarged_struct, shifted))
                 else:
                     enlarged_struct = shifted
-                next_pos = map(lambda x : x + current_pos, search_dirs)
-                next_pos = [p for p in next_pos if not tuple(p.tolist()) in searched_pos]
+                next_pos = map(lambda x: x + current_pos, search_dirs)
+                next_pos = [p for p in next_pos if not tuple(
+                    p.tolist()) in searched_pos]
                 supercell_pos += next_pos
         # Replace the coordinate system and atom positions.
         self.direct = np.unique(enlarged_struct)
@@ -461,16 +466,14 @@ class Structure(object):
     def combine_structures(struct_1, struct_2):
         """Combines two Structure objects with the same coordinates: place the 
             two Structures objects next to each other along the c axis.
-        
+
         Args:
             struct_1 (Structure obj): One Structure object.
             struct_2 (Structure obj): Another Structure object.
-        
+
         Returns:
             Structure obj: The combined structure.
         """
-        # Assuming that these structures have same lattice vector sets. We extend
-        # the c direction by 2 and shift struct_2 to that place. 
         struct_1.direct['position'][:, 2] /= 2.0
         struct_2.direct['position'][:, 2] /= 2.0
         struct_2.direct['position'][:, 2] += 0.5
