@@ -5,14 +5,62 @@ import json
 
 
 class Configuration(object):
-    """docstring for Config"""
+    """A class to specify how a grain-boundary genie runs.
+    
+    Attributes:
+        atom_count_range (tuple): The range of acceptable atom number in the 
+            final structure.
+        boundary_radius (float): The proportion of lattice vector length such 
+            that atoms within this distance will be considered boundary atoms.
+        coincident_pts_search_step (int): Number of multiples tried to 
+            replicate one structure when searching for coincidence points.
+        coincident_pts_tolerance (float): The tolerance of distance between 
+            two points that are considered coincidence points, in angstrom.
+        fast_removal (bool): When set to True, only consider boundary atoms in 
+            collision removal; otherwise use minimum image convention 
+            algorithm to search for each pair of atoms within the structure.
+        gb_settings (list of list): A list of lists of format 
+            [struct 1 orientation, struct 2 orientation, twisting angle] 
+            to specify each run of the algorithm.
+        lattice_vec_agl_range (tuple): The minimum and maximum angles allowed 
+            between any two lattice vectors, in rad.
+        max_coincident_pts_searched (int): Maximum number of coincidence 
+            points considered when searching for lattice vector sets.
+        min_atom_dist (dict): A dictionary where the key is tuple of atom type
+            names and value is the minimum distance in angstrom.
+        min_vec_length (float): Minimum length of lattice vectors.
+        mutual_view_agl_tolerance (float): Tolerance of the angle between two 
+            angles that are considered mutual angles, in rad.
+        output_dir (str): Name of output directory.
+        output_format (str): Output file extension, currently only 'vasp', 
+            'xyz', and 'ems' supported.
+        output_name_prefix (str): The prefix added to each output file.
+        output_options (dict): Keyword arguments required for certain file 
+            types.
+        overwrite_protect (bool): When set to True, if the file to be written 
+            exists, find a new filename instead of overwriting the original.
+        random_delete_atom (bool): When set to True, shuffle atom list before 
+            collision removal.
+        skip_collision_removal (bool): When set to True, skip collision 
+            removal routine.
+        struct_1 (str): Path to the input file of a structure.
+        struct_2 (str): Path to the input file of another structure.
+        view_agl_count (int): Number of viewing angles to recommend for each 
+            structure.
+    """
     def __init__(self, struct_1, struct_2):
+        """Initializer for a Configuration object.
+        
+        Args:
+            struct_1 (str): Path to the input file of a structure.
+            struct_2 (str): Path to the input file of another structure.
+        """
         # Basic GB settings.
-        self.struct_1 = struct_1 # First structure path, required.
-        self.struct_2 = struct_2 # Second structure path, required.
-        self.gb_settings = []    # List of GbSetting parameters.
-        self.view_agl_count = 10 # Optional value of view angle count.
-        self.mutual_view_agl_tolerance = 0.0873
+        self.struct_1 = struct_1 
+        self.struct_2 = struct_2 
+        self.gb_settings = []    
+        self.view_agl_count = 10 
+        self.mutual_view_agl_tolerance = 0.0873 #
 
         # Coincident point search.
         self.coincident_pts_tolerance = 1.0
@@ -39,10 +87,29 @@ class Configuration(object):
         self.overwrite_protect = True
 
     def __str__(self):
-        return str(self.__dict__);
+        """Generates a string representation of a Configuration object.
+        
+        Returns:
+            str: The string representation.
+        """
+        return str(self.__dict__)
 
     @staticmethod
     def from_gbconf_file(path):
+        """Reads an input file and converts it into a Configuration object.
+        
+        Args:
+            path (str): The path to an input file formatted as JSON.
+        
+        Returns:
+            Configuration obj: A Configuration object with fields set according
+                to the input JSON file.
+        
+        Raises:
+            ValueError: Raised when path of structure 1 or 2 is not provided.
+                (This is the very minimum information required to generate
+                a Configuration object.)
+        """
         # First take in the gbconf file and parse JSON.
         with util.open_read_file(path, 'gbconf') as input_file:
             input_json = input_file.read()
@@ -133,10 +200,3 @@ class Configuration(object):
             config_object.overwrite_protect = parsed_json['overwrite_protect']
 
         return config_object
-
-
-def main():
-    print(Configuration.from_gbconf_file('test.gbconf'))
-
-if __name__ == '__main__':
-    main()

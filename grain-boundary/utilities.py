@@ -72,11 +72,3 @@ def open_write_file(path, overwrite_protect=True):
         return open(path + extension, 'w')
     else:
         return open(path, 'w')
-
-def main():
-    open_write_file('test_write')
-    open_write_file('test_write')
-    open_write_file('test_write')
-
-if __name__ == '__main__':
-    main()
