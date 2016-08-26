@@ -240,8 +240,9 @@ class Structure(object):
             if (next_line[0] == 'Selective'):
                 next_line = in_file.readline().split()
 
-            if (next_line[0] != 'Direct' and next_line[0] != 'D'):
-                raise ValueError('Only Mode \'Direct\' supported.')
+            if (next_line[0] != 'Direct' and next_line[0] != 'D' and
+                next_line[0] != 'direct' and next_line[0] != 'd'):
+                raise ValueError('Only Mode "Direct" supported.')
 
             atoms = []
             for _ in range(0, sum(element_count)):
