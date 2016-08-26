@@ -1,0 +1,130 @@
+/*
+ * NOTICE: This JSON file is only for demonstration purpose and cannot be 
+ *         parsed by the Python parser because of the presence of comments.
+ *         All possible fields and the type required are listed here. 
+ *         For fields that can be omitted in the configuration JSON file, 
+ *         the default value of is given in the comment. The order of the 
+ *         fields does not matter.
+ */
+
+{   
+    /************************
+     * BASIC CONFIGURATIONS *
+     ************************/
+
+    // (str) Path to the first structure, required. Currently only .vasp files
+    // are supported.
+    "struct_1": "path/to/some/structure.vasp",
+    // (str) Path to the second structure, required. Currently only .vasp files
+    // are supported.
+    "struct_2": "path/to/some/other/structure.vasp",
+    // (list) List of direction + twist angle sets.
+    "gb_settings": 
+    [
+        // (list) Each entry represents one configuration in the form of 
+        // [(list of 3 int) struct_1 orientation, 
+        //  (list of 3 int) struct_2 orientation, 
+        //  (float) twisting angle, in degree].
+        // Default value: [].
+        [[5, 3, 1], [2, 1, 0], 45.0],
+        [[1, 1, 0], [1, 1, -1], 90.0]
+    ],
+    // (int) Maximum number of viewing angles for each original structure.
+    // Default value: 10.
+    "view_agl_count": 15,
+    // (float) Tolerance for mutual viewing angle, in degree.
+    // Default value: 5.0.
+    "mutual_view_agl_tolerance": 10.0,
+
+    /****************************
+     * COINCIDENCE POINT SEARCH *
+     ****************************/
+    
+    // (float) Tolerance for coincidence points, in angstrom.
+    // Default value: 1.0.
+    "coincident_pts_tolerance": 0.5,
+    // (int) Maximum multiples that the structure is expanded.
+    // Default value: 25.
+    "coincident_pts_search_step": 20,
+
+    /*****************************
+     * LATTICE VECTOR GENERATION *
+     *****************************/
+    
+    // (int) Maximum number of coincidence points to be processed.
+    // Default value: 100.
+    "max_coincident_pts_searched": 200,
+    // (list of 2 float) The minimum and maximum angle permitted between any 
+    // lattice vector and the plane formed by the other two lattice vectors.
+    // In degree, min first and then max.
+    // Default value: [0.0, 180.0].
+    "lattice_vec_agl_range": [15.0, 90.0],
+    // (float) The minimum lattice vector length permitted, in angstrom.
+    // Default value: 0.0.
+    "min_vec_length": 10.0,
+    // (list of two int) Minimum and maximum atom number permitted in the final
+    // structure. Min first then max.
+    // Default value: [0, 10000].
+    "atom_count_range": [500, 2000],
+
+    /*********************
+     * COLLISION REMOVAL *
+     *********************/
+
+    // (bool) When set to true, skip collision removal.
+    // Default value: false.
+    "skip_collision_removal": false,
+    // (bool) When set to true, check only boundary collisions. Otherwise,
+    // use minimum image convention to check each pair of atom in the 
+    // combined structure.
+    // Default value: true.
+    "fast_removal": true,
+    // (list) A list specifying minimum distances between atom types used for
+    // collision removal. The order of atom types does not matter.
+    // Default value: [].
+    "min_atom_dist": 
+    [
+        // (list) Each entry is of the form
+        // [(str) atom 1 name, (str) atom 2 name, (float) min distance].
+        ["Cd", "Te", 2.5],
+        ["Cd", "Cd", 4.0], 
+        ["Te", "Te", 4.0]
+    ],
+    // (float) The proportion of lattice vector length such that atoms within 
+    // this distance will be considered boundary atoms.
+    // Default value: 0.01.
+    "boundary_radius": 0.025,
+    // (bool) When set to true, shuffle atom list before collision removal. 
+    // Doing this can possibly prevent some systematic problem cause by 
+    // deterministic collision removal process.
+    // Default value: false.
+    "random_delete_atom": true,
+
+    /*****************
+     * OUTPUT FORMAT *
+     *****************/
+
+    // (str) Output format extension. Currently "vasp", "xyz", and "ems" are 
+    // supported.
+    // Default value: "vasp".
+    "output_format": "ems",
+    // (dict) Output options. For some output formats, extra information is 
+    // required. Pass them as a dictionary. An example of extra parameters 
+    // required for outputting ems files is shown below.
+    // Default value: {}
+    "output_options":
+    {
+        "occ": 1.0,
+        "wobble": 2.0,
+    },
+    // (str) Output directory name. If does not exist, will create.
+    // Default: ""
+    "output_dir": "test_output",
+    // (str) The string appended to each output file name.
+    // Default: ""
+    "output_name_prefix": "aug_26_try",
+    // (bool) When set to true, if the file name exists, will create a new file 
+    // name instead of overwriting the original.
+    // Default: true.
+    "overwrite_protect": true
+}

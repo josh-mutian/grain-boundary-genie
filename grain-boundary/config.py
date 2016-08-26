@@ -74,7 +74,7 @@ class Configuration(object):
         self.max_coincident_pts_searched = 100
         self.lattice_vec_agl_range = (0, PI / 2)
         self.min_vec_length = 0.0
-        self.atom_count_range = (1000, 10000)
+        self.atom_count_range = (0, 10000)
 
         # Collision removal.
         self.skip_collision_removal = False
