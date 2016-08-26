@@ -82,7 +82,7 @@ def genie(conf):
                 print('Current lattice vector set:')
                 print(box)
                 print('Expected atom count: %d' %
-                      (int(np.linalg.det(box) * atom_count_unit_vol) * 2))
+                      abs(int(np.linalg.det(box) * atom_count_unit_vol) * 2))
 
                 count += 1
                 s_1_cpy = copy.deepcopy(struct_1)

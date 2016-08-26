@@ -117,15 +117,26 @@ class Structure(object):
         if len(struct_1.view_agls) <= 0 or len(struct_2.view_agls) <= 0:
             return np.array([1., 0., 0.])
 
+        res = []
+        diff = []
+
         for agl_1 in struct_1.view_agls:
             for agl_2 in struct_2.view_agls:
                 agl_in_between = geom.angle_between_vectors(agl_1, agl_2)
                 # If an angle is within the tolerance, return it.
                 if agl_in_between < tol or agl_in_between > (PI - tol):
-                    return (agl_1 + agl_2) / 2
+                    res.append((agl_1 + agl_2) / 2)
+                    diff.append(agl_in_between)
 
-        # If no such angle exists, return the first view angle of struct_1.
-        return struct_1.view_agls[0]
+        res = np.array(res)
+        diff = np.array(diff)
+        if len(res) <= 0:
+            # If no such angle exists, return the first view angle of struct_1.
+            return struct_1.view_agls[0]
+        else:
+            # Or else output the one with smallest difference in between.
+            res = res[np.argsort(diff)]
+            return res[0]
 
     @staticmethod
     def from_file(path, **kwargs):
@@ -253,6 +264,7 @@ class Structure(object):
         Returns:
             (void): Does not return.
         """
+        self.reconcile(according_to='D')
         out_name = path if path.split('.')[-1] == 'vasp' else path + '.vasp'
         with util.open_write_file(out_name, overwrite_protect) as out_file:
             out_file.write(self.comment + '\n1.0\n')

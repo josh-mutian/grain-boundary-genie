@@ -122,3 +122,34 @@ def cartesian_product(array, level):
                            len(array) ** i))
     res = np.transpose(np.array(res))
     return res
+
+def vector_angle_to_plane(vec, plvec_1, plvec_2):
+    """Finds the angle between one vector and the plane formed by other two 
+        vectors.
+    
+    Args:
+        vec (nparray): Vector (3).
+        plvec_1 (nparray): First plane vector (3)
+        plvec_2 (nparray): Second plane vector (3)
+    
+    Returns:
+        float: The acute angle between vector and plane, in rad.
+    """
+    agl = angle_between_vectors(vec, np.cross(plvec_1, plvec_2))
+    return PI / 2 - min(agl, PI - agl)
+
+def get_box_angles(lat_vecs):
+    """Within a lattice vector set, finds the angle between each vector and
+        the plane formed by the other two vectors.
+    
+    Args:
+        lat_vecs (nparray): A lattice vector set (3 * 3).
+    
+    Returns:
+        nparray: An array (3) of three angles, in rad.
+    """
+    return np.array([
+        vector_angle_to_plane(lat_vecs[0], lat_vecs[1], lat_vecs[2]),
+        vector_angle_to_plane(lat_vecs[1], lat_vecs[2], lat_vecs[0]),
+        vector_angle_to_plane(lat_vecs[2], lat_vecs[0], lat_vecs[1])
+    ])

@@ -25,7 +25,8 @@ class Configuration(object):
             [struct 1 orientation, struct 2 orientation, twisting angle] 
             to specify each run of the algorithm.
         lattice_vec_agl_range (tuple): The minimum and maximum angles allowed 
-            between any two lattice vectors, in rad.
+            between any vector and the plane formed by the other two vectors, 
+            in rad.
         max_coincident_pts_searched (int): Maximum number of coincidence 
             points considered when searching for lattice vector sets.
         min_atom_dist (dict): A dictionary where the key is tuple of atom type
@@ -71,7 +72,7 @@ class Configuration(object):
 
         # Lattice vector generation.
         self.max_coincident_pts_searched = 100
-        self.lattice_vec_agl_range = (0, PI)
+        self.lattice_vec_agl_range = (0, PI / 2)
         self.min_vec_length = 0.0
         self.atom_count_range = (1000, 10000)
 
