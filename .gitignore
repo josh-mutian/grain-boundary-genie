@@ -3,3 +3,4 @@
 *.test
 *.xyz
 *.ems
+/test

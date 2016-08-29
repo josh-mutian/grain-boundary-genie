@@ -168,8 +168,9 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
                   ''.join(str(orien_2.tolist()).split()),
                   str(np.rad2deg(twist_agl)), str(count)]
     trans_name = '_'.join(trans_name)
+    prefix = ''.join(conf.output_name_prefix.split())
 
-    struct_name = '_'.join([struct_1_name, struct_2_name, trans_name])
+    struct_name = '_'.join([prefix, struct_1_name, struct_2_name, trans_name])
     file_name = os.path.join(conf.output_dir, struct_name)
     return file_name, struct_name
 
@@ -199,7 +200,7 @@ def main(argv):
         genie(Configuration.from_json_file(argv[1]))
     elif os.path.isdir(argv[1]):
         # In this case, find all .json files in the given directory.
-        for conf_file in [f for f in os.listdir(agrv[1]) if
+        for conf_file in [f for f in os.listdir(argv[1]) if
                           f.endswith('.json')]:
             try:
                 genie(Configuration.from_json_file(conf_file))
