@@ -53,9 +53,8 @@ def genie(conf):
 
         try:
             # Generate transformation matrices.
-            trans_1 = np.dot(geom.rotation_angle_matrix(
-                np.array([0., 0., 1.]), twist_agl), geom.get_rotation_matrix(
-                orien_1, np.array([0., 0., 1.])))
+            trans_1 = np.dot(geom.rotation_angle_matrix(orien_1, twist_agl), 
+                geom.get_rotation_matrix(orien_1, np.array([0., 0., 1.])))
             trans_2 = geom.get_rotation_matrix(orien_2, np.array([0., 0., 1.]))
             # Transform structures.
             struct_1.transform(trans_1)
