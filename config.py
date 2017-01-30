@@ -37,6 +37,9 @@ class Configuration(object):
         output_dir (str): Name of output directory.
         output_format (str): Output file extension, currently only 'vasp', 
             'xyz', and 'ems' supported.
+        output_max_count (int): Maximum number of results that will be output.
+            If less than maximum number of valid coincidence points available,
+            all of them will be output.
         output_name_prefix (str): The prefix added to each output file.
         output_options (dict): Keyword arguments required for certain file 
             types.
@@ -86,6 +89,7 @@ class Configuration(object):
         # Output format.
         self.output_format = 'vasp'
         self.output_options = {}
+        self.output_max_count = 10
         self.output_dir = ''
         self.output_name_prefix = ''
         self.overwrite_protect = True
@@ -197,6 +201,9 @@ class Configuration(object):
             config_object.output_format = parsed_json['output_format']
         if 'output_options' in keys:
             config_object.output_options = parsed_json['output_options']
+        if 'output_max_count' in keys:
+            config_object.output_max_count =\
+                int(parsed_json['output_max_count'])
         if 'output_dir' in keys:
             config_object.output_dir = parsed_json['output_dir']
         if 'output_name_prefix' in keys:

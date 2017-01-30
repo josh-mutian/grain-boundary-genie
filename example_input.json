@@ -117,6 +117,11 @@
         "occ": 1.0,
         "wobble": 2.0,
     },
+    // (int) Output count. The number of outputs that will be generated.
+    // If valid coincidence boxes are less than this number, all of them
+    // will be output.
+    // Default value: 10
+    "output_max_count": 10,
     // (str) Output directory name. If does not exist, will create.
     // Default: ""
     "output_dir": "test_output",

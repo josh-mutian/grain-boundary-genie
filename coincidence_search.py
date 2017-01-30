@@ -86,4 +86,5 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
     if len(res) <= 0:
         raise ValueError('No lattice vector set that meets requirements.')
     print('Totally %d qualified lattice vector sets found' % len(res))
+    # Sort the result from smallest to largest boxes.
     return res[np.argsort(np.absolute(np.linalg.det(res)))]
