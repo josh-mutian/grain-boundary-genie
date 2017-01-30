@@ -125,6 +125,9 @@ def genie(conf):
                         file_name, conf.output_format,
                         overwrite_protect=conf.overwrite_protect,
                         **conf.output_options)
+
+                    if count >= conf.output_max_count:
+                        break
                 except Exception, e:
                     traceback.print_tb(sys.exc_info()[2])
                     print(str(e))
