@@ -153,3 +153,7 @@ def get_box_angles(lat_vecs):
         vector_angle_to_plane(lat_vecs[1], lat_vecs[2], lat_vecs[0]),
         vector_angle_to_plane(lat_vecs[2], lat_vecs[0], lat_vecs[1])
     ])
+
+def box_good_c(box, epsilon=1e-3):
+    normed_vec = normalize_vector(box[2])
+    return abs(normed_vec[0]) <= epsilon and abs(normed_vec[1]) <= epsilon
