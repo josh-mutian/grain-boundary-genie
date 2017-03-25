@@ -143,7 +143,10 @@ class Configuration(object):
         config_object.gb_settings = map(
             lambda x: [np.array(x[0]).astype(float),
                        np.array(x[1]).astype(float),
-                       np.deg2rad(float(x[2]))],
+                       np.deg2rad(float(x[2])),
+                       x[3],
+                       np.array(x[4]).astype(float),
+                       np.deg2rad(float(x[5]))],
             parsed_json['gb_settings'])
 
         # Optional value viewing angle number.

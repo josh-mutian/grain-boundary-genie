@@ -24,10 +24,13 @@
         // (list) Each entry represents one configuration in the form of 
         // [(list of 3 int) struct_1 orientation, 
         //  (list of 3 int) struct_2 orientation, 
-        //  (float) twisting angle, in degree].
+        //  (float) twisting angle, in degree,
+        //  (boolean) tilt,
+        //  (list of 3 int) constant view angle to twist
+        //  (float) twist angle].
         // Default value: [].
-        [[5, 3, 1], [2, 1, 0], 45.0],
-        [[1, 1, 0], [1, 1, -1], 90.0]
+        [[5, 3, 1], [2, 1, 0], 45.0, false, [0, 0, 0], 0.0],
+        [[1, 1, 0], [1, 1, -1], 90.0, true, [1, 2, 3], 15.0]
     ],
     // (int) Maximum number of viewing angles for each original structure.
     // Default value: 10.

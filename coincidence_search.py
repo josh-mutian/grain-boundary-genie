@@ -83,6 +83,8 @@ def find_overlattice(coincident_pts, min_agl, max_agl, min_vol, max_vol,
     vec_agls = np.array(map(geom.get_box_angles, res.tolist()))
     res = res[np.apply_along_axis(
         np.all, 1, np.logical_and(vec_agls > min_agl, vec_agls < max_agl))]
+    if len(res) <= 0:
+        raise ValueError('No lattice vector set that meets requirements.')
     # Retain only results with c direction parallel to (0, 0, 1).
     good_c = np.array(map(geom.box_good_c, res.tolist()))
     res = res[good_c]

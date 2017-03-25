@@ -46,24 +46,31 @@ def genie(conf):
             os.mkdir(conf.output_dir)
 
     # For each configuration in gb_settings, produce the simulated structures.
-    for [orien_1, orien_2, twist_agl] in conf.gb_settings:
+    for [orien_1, orien_2, twist_agl, tilt, const_view_agl, tilt_agl] in conf.gb_settings:
         # Make deep copies of the original structures.
         struct_1 = copy.deepcopy(orig_1)
         struct_2 = copy.deepcopy(orig_2)
 
         try:
             # Generate transformation matrices.
-            trans_1 = np.dot(geom.rotation_angle_matrix(
-                np.array([0., 0., 1.]), twist_agl), geom.get_rotation_matrix(
-                orien_1, np.array([0., 0., 1.])))
+            trans_1 = np.dot(
+                geom.rotation_angle_matrix(np.array([0., 0., 1.]), twist_agl), 
+                geom.get_rotation_matrix(orien_1, np.array([0., 0., 1.])))
             trans_2 = geom.get_rotation_matrix(orien_2, np.array([0., 0., 1.]))
+            if tilt:
+                trans_2 = np.dot(trans_2,
+                    geom.rotation_angle_matrix(const_view_agl, tilt_agl))
+
             # Transform structures.
             struct_1.transform(trans_1)
             struct_2.transform(trans_2)
             # Find mutual viewing angle and generate a matrix that will turn
             # the mutual viewing angle into the direction of [1, 0, 0].
-            mutual_view_agl = Structure.find_mutual_viewing_angle(
-                struct_1, struct_2, tol=conf.mutual_view_agl_tolerance)
+            if tilt:
+                mutual_view_agl = const_view_agl
+            else:
+                mutual_view_agl = Structure.find_mutual_viewing_angle(
+                    struct_1, struct_2, tol=conf.mutual_view_agl_tolerance)
             mat_turn_mutual = geom.get_rotation_matrix(
                 mutual_view_agl, np.array([1., 0., 0.]))
             # Find coincident points.
@@ -119,7 +126,8 @@ def genie(conf):
                     combined_struct.transform(mat_turn_mutual)
                     # Update names and output.
                     file_name, struct_name = generate_name(
-                        conf, orien_1, orien_2, twist_agl, count)
+                        conf, orien_1, orien_2, twist_agl, 
+                        tilt, const_view_agl, tilt_agl, count)
                     combined_struct.comment = struct_name
                     combined_struct.to_file(
                         file_name, conf.output_format,
@@ -140,7 +148,8 @@ def genie(conf):
             pass
 
 
-def generate_name(conf, orien_1, orien_2, twist_agl, count):
+def generate_name(conf, orien_1, orien_2, twist_agl, tilt, const_view_agl, 
+                  tilt_agl, count):
     """Generates names of the structure based on transformations.
 
     Args:
@@ -169,7 +178,11 @@ def generate_name(conf, orien_1, orien_2, twist_agl, count):
 
     trans_name = [''.join(str(orien_1.tolist()).split()),
                   ''.join(str(orien_2.tolist()).split()),
-                  str(np.rad2deg(twist_agl)), str(count)]
+                  str(np.rad2deg(twist_agl)),
+                  str(tilt),
+                  ''.join(str(const_view_agl.tolist()).split()),
+                  str(np.rad2deg(tilt_agl)),
+                  str(count)]
     trans_name = '_'.join(trans_name)
     prefix = ''.join(conf.output_name_prefix.split())
 
