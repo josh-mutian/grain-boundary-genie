@@ -9,10 +9,10 @@ def find_coincidence_points(box_1, box_2, max_int, tol):
 
     Args:
         box_1 (nparray): Coordinate system of a structure (3 * 3).
-        box_2 (nparray): COordinate system of another structure (3 * 3).
+        box_2 (nparray): Coordinate system of another structure (3 * 3).
         max_int (int): Maximum integer to grow and search.
         tol (float): Tolerance of distance between coincidence points, in 
-            angstrom.
+            proportion (should be between 0.0 and 1.0).
 
     Returns:
         nparray: A matrix of coincidence points (n * 3).
@@ -20,9 +20,13 @@ def find_coincidence_points(box_1, box_2, max_int, tol):
     search_points = geom.cartesian_product(np.arange(max_int), 3)
     vecs = np.dot(search_points, box_1)
     nearest_int_mult = np.rint(np.dot(vecs, np.linalg.inv(box_2)))
-    dist = np.apply_along_axis(
-        np.linalg.norm, 1, (np.dot(nearest_int_mult, box_2) - vecs))
-    vecs = vecs[np.where(dist <= tol)]
+    fitted_vecs = np.dot(nearest_int_mult, box_2)
+    diff_prop = np.absolute(vecs / (fitted_vecs + 1e-9)) - 1.0
+    # The addition of 1e-6 prevents division by zero.
+    max_diff_prop = np.apply_along_axis(np.max, 1, np.absolute(diff_prop))
+    print(max_diff_prop)
+    # The largest proportional difference in all 3 basis vectors.
+    vecs = vecs[np.where(max_diff_prop <= tol)]
     vecs = vecs[np.argsort(np.apply_along_axis(np.linalg.norm, 1, vecs))]
     return vecs[1:]
 

@@ -7,3 +7,6 @@ In this new implementation, the program is restructured so that the it will be e
 Documentation of the genie is still in progress and a Wiki on GitHub is expected.
 
 If you have any inquiries, please contact lium [at] anl [dot] gov.
+
+#### Usage
+Please refer to the file `example_input.json` to construct a `.json` file of the configuration that you want to run. Then `cd` to the directory of the ginie and run `python genie.py *.json` where `*.json` is to be replaced by the `.json` configuration file that you have just constructed.

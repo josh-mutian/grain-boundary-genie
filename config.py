@@ -17,13 +17,13 @@ class Configuration(object):
         coincident_pts_search_step (int): Number of multiples tried to 
             replicate one structure when searching for coincidence points.
         coincident_pts_tolerance (float): The tolerance of distance between 
-            two points that are considered coincidence points, in angstrom.
+            two points that are considered coincidence points, in proportion.
         fast_removal (bool): When set to True, only consider boundary atoms in 
             collision removal; otherwise use minimum image convention 
             algorithm to search for each pair of atoms within the structure.
-        gb_settings (list of list): A list of lists of format 
-            [struct 1 orientation, struct 2 orientation, twisting angle] 
-            to specify each run of the algorithm.
+        gb_settings (mixed list): A list of lists of format 
+            [struct 1 orientation, struct 2 orientation, twisting angle, 
+            tilt_boolean, tilt viewing angle, tilt degree] to specify each run of the algorithm.
         lattice_vec_agl_range (tuple): The minimum and maximum angles allowed 
             between any vector and the plane formed by the other two vectors, 
             in rad.
@@ -70,7 +70,7 @@ class Configuration(object):
         self.mutual_view_agl_tolerance = 0.0873
 
         # Coincident point search.
-        self.coincident_pts_tolerance = 1.0
+        self.coincident_pts_tolerance = 0.2
         self.coincident_pts_search_step = 25
 
         # Lattice vector generation.

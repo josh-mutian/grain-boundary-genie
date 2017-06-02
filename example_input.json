@@ -43,8 +43,8 @@
      * COINCIDENCE POINT SEARCH *
      ****************************/
     
-    // (float) Tolerance for coincidence points, in angstrom.
-    // Default value: 1.0.
+    // (float) Tolerance for coincidence points, by proportion.
+    // Default value: 0.2.
     "coincident_pts_tolerance": 0.5,
     // (int) Maximum multiples that the structure is expanded.
     // Default value: 25.
